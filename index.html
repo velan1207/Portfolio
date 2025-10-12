@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>VELAN.M — Portfolio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container">
+        <h1 id="name">VELAN.M</h1>
+        <p id="headline">Student at Chennai Institute Of Technology</p>
+        <nav class="actions">
+          <select id="theme-select" aria-label="Theme selector" style="margin-right:8px;padding:8px;border-radius:8px;border:1px solid rgba(15,23,42,0.04)">
+            <option value="default">Default</option>
+            <option value="dark">Dark</option>
+            <option value="warm">Warm</option>
+          </select>
+          <a class="btn" href="admin.html" id="edit-btn">Update (login)</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container">
+      <section id="hero">
+        <div id="img" style="text-align:center;margin-bottom:18px;">
+          <a href="img/velan.jpg"><img src="img/velan.jpg" alt="Photo" style="width:150px;border-radius:50%;"></a>
+          <p style="margin:8px 0;">Student at <b>Chennai Institute Of Technology</b></p>
+        </div>
+      </section>
+
+      <section id="about">
+        <h2>About</h2>
+        <p id="about-text">This is Velan. I'm a student and passionate about web development, programming, and learning new technologies. Use the Admin page to customize this text.</p>
+      </section>
+
+      <section id="skills">
+        <h2>Skills</h2>
+        <div id="skills-buttons">
+          <button class="skill-button" data-skill-type="technical">View Technical Skills</button>
+          <button class="skill-button" data-skill-type="soft">View Soft Skills</button>
+        </div>
+        <!-- Hidden lists exist for import compatibility; modal UI is primary -->
+        <ul id="tech-skills-list" class="hidden-list"></ul>
+        <ul id="soft-skills-list" class="hidden-list"></ul>
+      </section>
+
+      <!-- Skills modal -->
+      <div id="skills-modal" class="modal" aria-hidden="true">
+        <div class="modal-overlay" id="skills-modal-overlay"></div>
+        <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="skills-modal-title">
+          <button id="skills-modal-close" class="modal-close" aria-label="Close">×</button>
+          <h3 id="skills-modal-title">Skills</h3>
+          <ul id="skills-modal-list"></ul>
+        </div>
+      </div>
+
+      <section id="projects">
+        <h2>Projects</h2>
+        <div class="project-search">
+          <input id="project-search-input" type="search" placeholder="Search projects...">
+        </div>
+        <div id="projects-list" class="projects-grid">
+          <div class="project-card">
+            <h3><a href="#">Project A — Smart Scheduler</a></h3>
+            <div class="project-meta">React • Node.js • Mar 2025</div>
+            <p class="desc">A professional scheduling tool that optimizes tasks using priority heuristics and offers a clean, mobile-first UI for users to manage daily work.</p>
+            <div class="project-actions"><a href="#" class="btn">Details</a></div>
+          </div>
+          <div class="project-card">
+            <h3><a href="#">Project B — Weather Insights</a></h3>
+            <div class="project-meta">Node.js • OpenWeatherMap • Jan 2025</div>
+            <p class="desc">A lightweight weather insights app that surfaces 7-day forecasts, visual charts, and location-based updates with a focus on accessibility and performance.</p>
+            <div class="project-actions"><a href="#" class="btn">Details</a></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Project details modal -->
+      <div id="project-modal" class="modal" aria-hidden="true">
+        <div class="modal-overlay" id="project-modal-overlay"></div>
+        <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="project-modal-title">
+          <button id="project-modal-close" class="modal-close" aria-label="Close">×</button>
+          <h3 id="project-modal-title">Project</h3>
+          <div id="project-modal-body"></div>
+          <p id="project-modal-link"></p>
+        </div>
+      </div>
+
+      <section id="internship">
+        <h2>Internship</h2>
+        <div id="internship-content">
+          <h3>Internship — Web Development</h3>
+          <p id="internship-text">Internships provide industry exposure and hands-on experience.</p>
+          <p id="internship-link">Cisco Internship: <a href="img/intenship.jpg">Letter Link</a></p>
+        </div>
+      </section>
+
+      <section id="achievements">
+        <h2>Achievements</h2>
+        <ul id="achievements-list">
+          <li>Solved 400+ LeetCode and 900+ CodeChef problems.</li>
+          <li>Built and deployed multiple apps and web projects.</li>
+          <li>Participant — All India Developers Challenge 2025 and institute hackathons.</li>
+        </ul>
+      </section>
+
+      <section id="resume">
+        <h2>Resume</h2>
+        <p>Download my resume: <a href="img/Velan_M_Resume 11-10-2025.pdf" download>Here</a></p>
+      </section>
+
+      <section id="contact">
+        <h2>Contact</h2>
+  <p>Email: velanm.cse2024@citchennai.net</p>
+        <p>Phone: 7904092680</p>
+        <p>LinkedIn: <a href="https://www.linkedin.com/in/velan-m-58059932a">Profile Link</a></p>
+      </section>
+    </main>
+
+    <footer class="site-footer container">
+      <small>&copy; 2025 VELAN.M — Built with a simple editor demo.</small>
+    </footer>
+
+    <script src="ui.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

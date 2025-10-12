@@ -1,0 +1,303 @@
+:root{
+	/* Professional palette: neutral background, deep slate text, vibrant blue accent, warm teal support */
+	--bg: #f4f6fb; /* page background */
+	--card: #ffffff; /* card background */
+	--accent: #0b74ff; /* primary brand blue */
+	--accent-600: #075bd6; /* stronger shade */
+	--support: #08a8a0; /* secondary teal accent */
+	--muted: #556077; /* subdued text */
+	--accent-weak: #e8f1ff; /* faint accent background */
+	--radius: 12px;
+	--glass: rgba(255,255,255,0.6);
+	--text: #0f172a;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+	font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+	margin:0;
+	background:var(--bg);
+	color:var(--text);
+	-webkit-font-smoothing:antialiased;
+	-moz-osx-font-smoothing:grayscale;
+}
+
+/* Full-height layout: header + main + footer fit viewport. main scrolls internally when needed. */
+.container{max-width:1100px;margin:0 auto;padding:20px}
+/* Admin page: make the admin shell fill the viewport and allow the editor to use full width */
+.container.admin{max-width:none;margin:0;padding:6px 10px}
+.container.admin .editor{width:100%;max-width:none}
+/* Utility for full-bleed admin layout: remove centering and make main take full window width */
+.container.admin.full-bleed{max-width:100% !important;padding:6px 8px}
+.container.admin.full-bleed main.container{max-width:100% !important;width:100%}
+/* Allow the page to scroll normally (body scroll). Remove forced internal scrolling so the whole page scrolls.
+	This ensures there's no floating scrollbar on the right of the editor; the document scroll will be used. */
+main.container{height:auto;overflow:visible}
+
+/* Fullscreen styles when the admin container itself is fullscreen */
+.container.admin:fullscreen,
+.container.admin:-webkit-full-screen,
+.container.admin:-ms-fullscreen {
+	max-width: 100% !important;
+	padding: 6px !important;
+	height: 100%;
+}
+/* make the editor fill the fullscreen element (when in fullscreen mode) */
+.container.admin:fullscreen .editor,
+.container.admin:-webkit-full-screen .editor,
+.container.admin:-ms-fullscreen .editor {
+	max-height: 100vh !important;
+	height: 100vh !important;
+	overflow: auto;
+}
+
+/* Header */
+.site-header{
+	background: linear-gradient(90deg, rgba(11,116,255,0.06), rgba(8,168,160,0.03));
+	border-bottom: 1px solid rgba(11,116,255,0.06);
+	box-shadow: 0 6px 22px rgba(15,23,42,0.04);
+}
+.site-header .container{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.site-header h1{margin:0;font-size:28px;letter-spacing:-0.2px;color:var(--accent-600)}
+.site-header p{margin:0;color:var(--muted);font-size:14px}
+.actions .btn{margin-left:12px}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid rgba(15,23,42,0.04);background:linear-gradient(180deg,#fff,#f8fbff);color:var(--accent);text-decoration:none;cursor:pointer;font-weight:700}
+.btn:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(2,6,23,0.06)}
+.btn.primary{background:linear-gradient(90deg,var(--accent),var(--accent-600));color:#fff;border-color:transparent;box-shadow:0 14px 36px rgba(11,116,255,0.14)}
+
+/* Main layout */
+main.container{display:grid;grid-template-columns:1fr;gap:18px;padding-bottom:40px}
+h2{margin:0 0 10px 0}
+section{background:var(--card);padding:14px;border-radius:var(--radius);box-shadow:0 6px 12px rgba(7,12,20,0.03)}
+
+#hero{display:flex;align-items:center;justify-content:center}
+#img img{width:150px;border-radius:50%;border:6px solid var(--card);box-shadow:0 8px 24px rgba(15,23,42,0.06)}
+
+#about p{font-size:15px;color:var(--text);line-height:1.6}
+
+#skills-list li{margin:8px 0;padding:8px;border-radius:8px;background:var(--card);border:1px solid var(--accent-weak);display:flex;justify-content:space-between;align-items:center;color:var(--text)}
+
+#projects-list{list-style:none;padding:0;margin:0}
+#projects-list li{padding:10px;border-radius:8px;background:var(--card);border:1px solid var(--accent-weak);margin-bottom:8px}
+
+.projects-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.project-card{background:linear-gradient(180deg,var(--card),var(--glass));padding:12px;border-radius:10px;border:1px solid var(--accent-weak);box-shadow:0 6px 18px rgba(7,12,20,0.03)}
+.project-card h3{margin:0 0 6px 0;font-size:16px}
+.project-card h3 a{color:var(--text);text-decoration:none}
+.project-card .project-meta{font-size:12px;color:var(--muted);margin-bottom:8px}
+.project-card .desc{margin:0;color:var(--muted);font-size:13px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;line-clamp:3}
+.project-card .project-actions{margin-top:10px;display:flex;gap:8px;justify-content:flex-end}
+
+#contact p{margin:6px 0}
+
+.site-footer{padding:18px 28px;color:var(--muted);font-size:13px;text-align:center}
+
+/* Modals should fit the viewport */
+.modal-content{max-height:calc(100vh - 160px);overflow:auto}
+
+/* Admin specific */
+.admin .login,.admin .editor{max-width:900px}
+.login,.editor{background:var(--card);padding:18px;border-radius:12px;margin:12px 0;border:1px solid var(--accent-weak)}
+.login,.editor{background:var(--card);padding:18px;border-radius:12px;margin:12px 0;border:1px solid var(--accent-weak)}
+/* For normal pages, don't create an inner scrollbar; rely on the page scroll. For very short viewports, allow editor to expand naturally. */
+.admin .editor{max-height:none;overflow:visible}
+input,textarea{width:100%;padding:10px;margin:8px 0 14px;border:1px solid var(--accent-weak);border-radius:8px;font-size:14px;background:var(--card);color:var(--text)}
+.editor-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.project-item{background:var(--card);border:1px solid var(--accent-weak);padding:12px;border-radius:8px;margin-bottom:10px;display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;color:var(--text)}
+.project-item input{margin:0;color:var(--text);background:transparent;border:1px solid var(--accent-weak);padding:8px;border-radius:6px}
+
+/* Collapse project rows to single column on narrow screens so content fits */
+@media (max-width:720px){
+	.project-item{grid-template-columns:1fr;row-gap:8px;padding:10px}
+	.project-item .editor-toolbar{flex-wrap:wrap}
+}
+
+/* Rich text editor */
+.editor-toolbar{display:flex;gap:8px;margin:8px 0}
+.editor-toolbar .btn{padding:6px 8px;font-weight:600;font-size:13px}
+.rte{min-height:100px;border:1px solid var(--accent-weak);border-radius:8px;padding:10px;background:var(--card)}
+.rte{min-height:80px}
+
+.muted{color:var(--muted);font-size:13px}
+.small{font-size:13px;color:var(--muted)}
+.hidden{display:none}
+
+.signed-in-banner{margin-top:10px;padding:10px;border-radius:8px;background:var(--accent-weak);border:1px solid rgba(0,0,0,0.06);color:var(--text)}
+
+/* Responsive */
+@media (min-width:900px){
+		main.container{grid-template-columns: 1fr 360px}
+		#hero{grid-column:1/-1}
+		/* When admin wants full-bleed layout, collapse the sidebar column and give editor full width.
+			 Use the selector matching the actual main element that has the classes. */
+		main.container.admin.full-bleed{grid-template-columns: 1fr; padding-left:12px; padding-right:12px}
+		/* Ensure the login/editor sections expand to the available width (no narrow sidebar) */
+		main.container.admin.full-bleed .login,
+		main.container.admin.full-bleed .editor{
+			max-width: none;
+			width: 100%;
+			margin: 12px 0;
+		}
+}
+
+@media (max-width:520px){
+	.site-header .container{flex-direction:column;align-items:flex-start}
+	.btn{width:100%;justify-content:center}
+	.project-item{grid-template-columns:1fr;row-gap:8px}
+}
+
+/* Mobile: stack achievement items and make inputs/buttons full width */
+@media (max-width:480px){
+	.editor .achievement-item{flex-direction:column;align-items:stretch}
+	.editor .achievement-item input{width:100%;margin-bottom:8px}
+	.editor .achievement-item .btn{width:100%;justify-content:center}
+
+	/* Project editor rows: stack fields and make buttons full-width */
+	.project-item{grid-template-columns:1fr;row-gap:10px;padding:10px}
+	.project-item input{width:100%}
+	.project-item .btn{width:100%;justify-content:center}
+}
+
+/* Also apply achievement stacking/layout for slightly larger screens (tablets/small laptops) */
+@media (max-width:720px){
+  .editor .achievement-item{flex-direction:column;align-items:stretch}
+  .editor .achievement-item input{width:100%;margin-bottom:8px;flex:none;min-width:0}
+  .editor .achievement-item .btn{width:100%;justify-content:center;margin:0}
+
+  .project-item{grid-template-columns:1fr;row-gap:10px;padding:10px}
+  .project-item input{width:100%}
+  .project-item .btn{width:100%;justify-content:center}
+}
+
+/* Slightly reduce padding for very small screens to fit more content */
+@media (max-width:400px){
+  .container{padding:12px}
+  .editor{padding:12px}
+  input,textarea{padding:8px}
+  .btn{padding:8px 10px}
+}
+
+/* Small utilities */
+.text-center{text-align:center}
+.muted-2{color:#94a3b8}
+
+/* Skills buttons and modal */
+#skills-buttons{display:flex;gap:10px;margin-bottom:12px}
+.skill-button{padding:10px 14px;border-radius:8px;border:1px solid var(--accent-weak);background:linear-gradient(180deg,var(--card),var(--glass));cursor:pointer;color:var(--accent);font-weight:600}
+
+.modal{display:none;position:fixed;inset:0;z-index:1200;align-items:center;justify-content:center}
+.modal[aria-hidden="false"]{display:flex}
+.modal-overlay{position:absolute;inset:0;background:rgba(2,6,23,0.45)}
+.modal-content{position:relative;background:var(--card);padding:18px;border-radius:12px;max-width:520px;width:90%;z-index:2;box-shadow:0 12px 36px rgba(2,6,23,0.2)}
+.modal-close{position:absolute;right:10px;top:8px;border:0;background:transparent;font-size:22px;cursor:pointer}
+.modal-content ul{margin:8px 0 0 0;padding-left:18px}
+.hidden-list{display:none}
+
+#achievements-list li{margin:6px 0;padding:8px 10px;border-radius:8px;background:transparent;border:0;color:var(--text);list-style:disc;margin-left:18px}
+#achievements-list a{color:var(--accent);text-decoration:underline}
+.editor .achievement-item{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.editor .achievement-item input{flex:1;min-width:0}
+
+/* Improve achievement item visibility on mobile when stacked */
+@media (max-width:480px){
+	.editor .achievement-item{flex-direction:column;align-items:stretch}
+	.editor .achievement-item input{width:100%;margin-bottom:8px;flex:none;min-width:0}
+	.editor .achievement-item .btn{width:100%;justify-content:center;margin:0}
+}
+
+/* -----------------------------
+	 Additional UI polish & interactivity styles
+	 Non-invasive enhancements: transitions, focus rings, button ripple, modal animation
+	 ----------------------------- */
+
+:root{
+	--accent-600: var(--accent);
+	--accent-500: #3b82f6;
+	--muted-2: #94a3b8;
+}
+
+/* Smooth transitions for actionable elements */
+button, a.btn, input, textarea { transition: box-shadow .18s ease, transform .12s ease, background-color .12s ease; }
+
+/* Buttons: better visuals and ripple container */
+.btn{position:relative;overflow:hidden}
+.btn:focus{outline:3px solid rgba(59,130,246,0.14);outline-offset:2px}
+.btn .ripple{position:absolute;border-radius:50%;transform:scale(0);background:rgba(255,255,255,0.5);animation:ripple .6s linear;pointer-events:none}
+@keyframes ripple{to{transform:scale(4);opacity:0}}
+
+/* Card hover lift */
+.project-card, .section-card{transition:transform .18s cubic-bezier(.2,.9,.2,1), box-shadow .18s ease}
+.project-card:hover, .section-card:hover{transform:translateY(-6px);box-shadow:0 18px 46px rgba(2,6,23,0.06)}
+
+/* Modal animations: fade+slide */
+.modal{transition:opacity .22s ease, visibility .22s ease}
+.modal[aria-hidden="true"]{opacity:0;visibility:hidden}
+.modal[aria-hidden="false"]{opacity:1;visibility:visible}
+.modal-content{transform:translateY(10px);transition:transform .28s cubic-bezier(.2,.9,.2,1),opacity .2s ease}
+.modal[aria-hidden="false"] .modal-content{transform:translateY(0);opacity:1}
+
+/* Focus-visible improvements for keyboard users */
+:focus:not(:focus-visible){outline: none}
+:focus-visible{outline:3px solid rgba(37,99,235,0.18);outline-offset:3px}
+
+/* Responsive typography tweaks */
+@media (max-width:720px){
+	h1{font-size:20px}
+	h2{font-size:18px}
+	.project-card h3{font-size:14px}
+}
+
+/* Small utility for subtle separators */
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--accent-weak),transparent);margin:12px 0;border-radius:2px}
+
+/* Accessibility: make hidden-list accessible offscreen (used for import) */
+.hidden-list{position: absolute!important;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+
+/* Interactive sections: reveal on scroll */
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease, transform .6s cubic-bezier(.2,.9,.2,1)}
+.reveal.visible{opacity:1;transform:none}
+
+/* Project tilt effect */
+.project-card{transform-style:preserve-3d;will-change:transform}
+.project-card.tilt{transition:transform .18s ease}
+
+/* Project search bar */
+.project-search{display:flex;gap:8px;align-items:center;margin-bottom:14px}
+.project-search input{padding:10px 12px;border-radius:999px;border:1px solid var(--accent-weak);background:var(--card);color:var(--text);width:100%;max-width:420px}
+
+/* Animated counters */
+.stat{font-weight:700;font-size:20px;color:var(--accent-600)}
+
+/* Toast notifications */
+.toast-container{position:fixed;right:20px;bottom:20px;z-index:2600;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--text);color:var(--card);padding:10px 14px;border-radius:8px;box-shadow:0 8px 26px rgba(2,6,23,0.2);opacity:0;transform:translateY(8px);transition:opacity .18s ease, transform .18s ease}
+.toast.show{opacity:1;transform:none}
+
+/* Theme variants (override CSS variables) */
+.theme-default { /* default theme placeholder */ --theme: default; }
+
+.theme-dark {
+	--bg: #071124;
+	--card: #0b1220;
+	--text: #e6f0fb;
+	--accent: #60a5fa;
+	--accent-600: #3b82f6;
+	--support: #06b6d4;
+	--muted: #9fb0c7;
+	--accent-weak: rgba(255,255,255,0.03);
+}
+
+.theme-warm {
+	--bg: #f7fbf8;
+	--card: #fffdf9;
+	--text: #08303a;
+	--accent: #0b7a6b;
+	--accent-600: #066c5b;
+	--support: #ff8a50;
+	--muted: #55636b;
+	--accent-weak: #f6f7f4;
+}
+

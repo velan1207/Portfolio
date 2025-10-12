@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin — Portfolio Editor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <!-- Google Identity Services (client-only). Replace CLIENT_ID with your OAuth 2.0 Client ID -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  </head>
+  <body>
+  <main class="container admin full-bleed">
+      <h1>Portfolio Editor</h1>
+      <div style="position:absolute;right:18px;top:18px;">
+        <select id="theme-select" aria-label="Theme selector" style="padding:8px;border-radius:8px;border:1px solid rgba(15,23,42,0.04)">
+          <option value="default">Default</option>
+          <option value="dark">Dark</option>
+          <option value="warm">Warm</option>
+        </select>
+      </div>
+
+      <section class="login">
+        <h2>Login</h2>
+  <p>Sign in with your Google account (use the account you configured for admin access) to edit the site locally.</p>
+  <p class="muted">Tip: For real Google sign-in, run the included dev server and open <code>http://localhost:3000/admin.html</code>.</p>
+  <!-- Hidden: manual email input removed from visible UI because Google Sign-In is used -->
+  <label for="email" style="display:none;">Email</label>
+  <input id="email" type="email" placeholder="you@example.com" style="display:none;">
+        <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+          <!-- Hidden manual sign-in button kept in DOM so existing JS can still reference it -->
+          <button id="login-btn" class="btn" style="display:none;">Sign in</button>
+          <button id="back-btn" class="btn">Go back</button>
+        </div>
+        <div style="margin-top:10px">
+          <!-- Google Sign-In button will render here. Configure `google-config.json` with your OAuth Client ID and start the dev server. -->
+          <div id="g_id_signin"></div>
+          <div id="g_fallback" style="margin-top:8px;display:none;">
+            <button id="g_fallback_btn" class="btn">Sign in with Google (demo)</button>
+          </div>
+        </div>
+        <p id="login-msg" class="muted">Use the demo email above to unlock editing.</p>
+  <div id="signed-in-banner" class="hidden signed-in-banner">Signed in as <strong id="signed-in-email">demo user</strong></div>
+      </section>
+
+      <section class="editor hidden" id="editor">
+        <h2>Content</h2>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <button id="import-btn" class="btn">Import from site</button>
+          <button id="apply-resume-btn" class="btn">Apply resume_text.txt</button>
+          <span class="small muted">(Try Import to pull from the live site or Apply Resume to populate fields from the provided resume text)</span>
+        </div>
+        <label for="name-input">Name</label>
+        <input id="name-input" type="text">
+
+        <label for="headline-input">Headline</label>
+        <input id="headline-input" type="text">
+
+        <label for="about-input">About (visual editor)</label>
+        <div class="editor-toolbar" data-target="about-input">
+          <button type="button" data-cmd="bold" class="btn">B</button>
+          <button type="button" data-cmd="italic" class="btn">I</button>
+          <button type="button" data-cmd="insertUnorderedList" class="btn">• List</button>
+          <button type="button" data-cmd="createLink" class="btn">Link</button>
+          <button type="button" data-cmd="removeFormat" class="btn">Clear</button>
+        </div>
+        <div id="about-input" class="rte" contenteditable="true" role="textbox" aria-multiline="true"></div>
+
+  <h3>Projects</h3>
+  <div id="projects-editor"></div>
+  <button id="add-project" class="btn">Add Project</button>
+
+        <h3>Skills</h3>
+  <h4>Technical Skills</h4>
+  <div id="tech-skills-editor"></div>
+  <button id="add-tech-skill" class="btn">Add Technical Skill</button>
+
+  <h4>Soft Skills</h4>
+  <div id="soft-skills-editor"></div>
+  <button id="add-soft-skill" class="btn">Add Soft Skill</button>
+
+  <h3>Internship</h3>
+  <label for="internship-company">Company / Organization</label>
+  <input id="internship-company" type="text" placeholder="e.g. AICTE–EduSkills">
+  <label for="internship-role">Role / Title</label>
+  <input id="internship-role" type="text" placeholder="e.g. Android App Development Intern (Jun 2025)">
+  <label for="internship-input">Internship text</label>
+  <div class="editor-toolbar" data-target="internship-input">
+    <button type="button" data-cmd="bold" class="btn">B</button>
+    <button type="button" data-cmd="italic" class="btn">I</button>
+    <button type="button" data-cmd="insertUnorderedList" class="btn">• List</button>
+    <button type="button" data-cmd="createLink" class="btn">Link</button>
+    <button type="button" data-cmd="removeFormat" class="btn">Clear</button>
+  </div>
+  <div id="internship-input" class="rte" contenteditable="true" role="textbox" aria-multiline="true"></div>
+        <label for="internship-link">Internship link (optional)</label>
+        <input id="internship-link" type="url" placeholder="img/intenship.jpg">
+
+        <h3>Resume</h3>
+        <label for="resume-link">Resume download link</label>
+        <input id="resume-link" type="url" placeholder="img/resume.pdf">
+
+        <h3>Contact</h3>
+        <label for="contact-email">Email</label>
+        <input id="contact-email" type="email">
+        <label for="contact-phone">Phone</label>
+        <input id="contact-phone" type="text">
+        <label for="contact-linkedin">LinkedIn URL</label>
+        <input id="contact-linkedin" type="url">
+
+  <h3>Achievements & Certifications</h3>
+  <div id="achievements-editor"></div>
+  <button id="add-achievement" class="btn">Add Achievement</button>
+
+        <div class="editor-actions">
+          <button id="save-btn" class="btn primary">Save</button>
+          <button id="logout-btn" class="btn">Logout</button>
+        </div>
+
+        <p class="muted">Changes are saved to your browser's localStorage and will be reflected on the main page.</p>
+      </section>
+    </main>
+
+    <script src="ui.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
