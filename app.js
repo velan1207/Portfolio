@@ -544,18 +544,27 @@
           if(!cfgResp.ok) throw new Error('Could not load google-config');
           const cfg = await cfgResp.json();
           GOOGLE_CLIENT_ID = cfg.GOOGLE_CLIENT_ID;
+          // populate debug panel (if present) so deployed site can show the effective config
+          try{ const dbg = document.getElementById('debug-info'); if(dbg){ dbg.textContent = `origin=${location.origin} client_id=${GOOGLE_CLIENT_ID}`; } }catch(e){}
           if(window.google && typeof window.google.accounts !== 'undefined' && GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID.indexOf('REPLACE_WITH') === -1){
+            // choose verification endpoint based on environment:
+            // - local dev server exposes /auth/google
+            // - Vercel/serverless deployment exposes /api/auth/google
+            const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+            const VERIFY_URL = isLocal ? '/auth/google' : '/api/auth/google';
+
             window.google.accounts.id.initialize({
               client_id: GOOGLE_CLIENT_ID,
               callback: async (resp) => {
                 // resp.credential is an ID token (JWT). Send to server for verification.
                 try{
                   const token = resp.credential;
-                  const verifyResp = await fetch('/auth/google', {
+                  const verifyResp = await fetch(VERIFY_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ id_token: token })
                   });
+                  try{ const dbg = document.getElementById('debug-info'); if(dbg){ dbg.textContent += ` verifyUrl=${VERIFY_URL}`; } }catch(e){}
                   if(!verifyResp.ok) {
                     const body = await verifyResp.json().catch(()=>({}));
                     loginMsg.textContent = 'Google sign-in failed: ' + (body.error || verifyResp.statusText);
