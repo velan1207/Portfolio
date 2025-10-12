@@ -551,7 +551,7 @@
                 // resp.credential is an ID token (JWT). Send to server for verification.
                 try{
                   const token = resp.credential;
-                  const verifyResp = await fetch('/api/auth/google', {
+                  const verifyResp = await fetch('/auth/google', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ id_token: token })
