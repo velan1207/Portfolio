@@ -1,0 +1,44 @@
+// Firestore security rules example
+// Allow reads to all, but restrict writes to authenticated admin by UID or email.
+// Replace `ADMIN_UID` and `admin@example.com` with your admin values before deploying.
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // meta doc (public read)
+    match /portfolio_meta/main {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == "ADMIN_UID" || (request.auth.token.email == "admin@example.com");
+    }
+
+    // projects collection
+    match /portfolio_projects/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == "ADMIN_UID" || (request.auth.token.email == "admin@example.com");
+    }
+
+    // internships
+    match /portfolio_internships/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == "ADMIN_UID" || (request.auth.token.email == "admin@example.com");
+    }
+
+    // skills
+    match /portfolio_skills/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == "ADMIN_UID" || (request.auth.token.email == "admin@example.com");
+    }
+
+    // achievements
+    match /portfolio_achievements/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == "ADMIN_UID" || (request.auth.token.email == "admin@example.com");
+    }
+
+    // default deny
+    match /{document=**} {
+      allow read: if false;
+      allow write: if false;
+    }
+  }
+}

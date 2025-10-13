@@ -1,6 +1,8 @@
 // Simple client-side portfolio editor with demo email check and localStorage persistence
 (() => {
   const DEMO_EMAIL = 'velanm.cse2024@citchennai.net';
+  // Admin allowed email(s) - update as appropriate
+  const ADMIN_ALLOWED_EMAIL = DEMO_EMAIL;
   const STORAGE_KEY = 'portfolio:data:v1';
 
   // Elements (index.html)
@@ -88,6 +90,47 @@
       }catch(e){ console.warn('Firestore init failed', e); }
     }
   }catch(e){ console.warn('Firebase not available', e); }
+
+  // --- Firebase Auth & Storage (compat) wiring ---
+  let firebaseAuth = null;
+  let firebaseStorage = null;
+  try{
+    if(window.firebase && typeof window.firebase.auth === 'function'){
+      try{ firebaseAuth = firebase.auth(); }catch(e){ console.warn('Auth init failed', e); }
+    }
+    if(window.firebase && typeof window.firebase.storage === 'function'){
+      try{ firebaseStorage = firebase.storage(); }catch(e){ console.warn('Storage init failed', e); }
+    }
+  }catch(e){ /* ignore */ }
+
+  // UI elements used for auth
+  const firebaseSignInContainer = document.getElementById('g_id_signin');
+
+  // Sign out helper (UI-level)
+  async function signOutUser(){
+    try{ if(firebaseAuth) await firebaseAuth.signOut(); }catch(e){}
+    // show login area
+    const loginSection = document.querySelector('.login'); if(loginSection) loginSection.classList.remove('hidden');
+    const banner = document.getElementById('signed-in-banner'); if(banner) banner.classList.add('hidden');
+    editorSection.classList.add('hidden');
+  }
+
+  // Upload profile image file to Firebase Storage if a File was selected. Returns download URL or original value.
+  async function uploadProfileImageIfNeeded(data){
+    // If a file input contains a File, upload to storage and return its download URL. Otherwise return data.profile.image.
+    try{
+      const fileInput = profileImageFileInput;
+      if(!fileInput || !fileInput.files || fileInput.files.length === 0) return data.profile && data.profile.image || '';
+      const file = fileInput.files[0];
+      if(!file || !firebaseStorage) return data.profile && data.profile.image || '';
+      const ext = file.name.split('.').pop();
+      const path = `profile-images/${Date.now()}_${Math.random().toString(36).slice(2,9)}.${ext}`;
+      const ref = firebaseStorage.ref().child(path);
+      const snap = await ref.put(file);
+      const url = await snap.ref.getDownloadURL();
+      return url;
+    }catch(e){ console.error('Profile image upload failed', e); return data.profile && data.profile.image || ''; }
+  }
 
   function defaultData(){
     return {
@@ -849,6 +892,13 @@
                   if(banner && bannerEmail){ bannerEmail.textContent = email; banner.classList.remove('hidden'); }
                   editorSection.classList.remove('hidden');
                   renderEditor();
+                  // If Firebase Auth is available, sign in client-side so onAuthStateChanged is populated
+                  try{
+                    if(firebaseAuth && token){
+                      const credential = firebase.auth.GoogleAuthProvider.credential(token);
+                      firebaseAuth.signInWithCredential(credential).catch(err=> console.warn('FirebaseAuth signInWithCredential failed', err));
+                    }
+                  }catch(e){ /* ignore */ }
                 }catch(err){
                   console.error('Failed to verify ID token with server', err);
                   loginMsg.textContent = 'Sign-in failed (server verification error)';
@@ -996,17 +1046,46 @@
       }
       // write locally first
       saveData(data);
-      // also write to Firestore (collections-based) so other clients see updates immediately
-      try{
-        if(firestore && metaDocRef){
-          // perform an ordered write: meta doc + replace collection contents
-          writePortfolioCollections(data).catch(err => console.error('Failed to write collections to Firestore', err));
-        }
-      }catch(err){ console.error('Firestore write error', err); }
-      // also write a lightweight 'lastUpdate' key so other tabs/windows receive a storage event
-      try{ localStorage.setItem('portfolio:lastUpdate', String(Date.now())); }catch(e){}
-      // redirect to the public page so user can see changes immediately
-      window.location.href = 'index.html';
+
+      // async save flow: require auth (if available), upload profile image, then write collections
+      (async ()=>{
+        try{
+          // If firebaseAuth exists, ensure an allowed admin is signed in
+          if(firebaseAuth){
+            const user = firebaseAuth.currentUser;
+            if(!user){
+              alert('Please sign in with the admin account to save changes.');
+              return;
+            }
+            const email = (user.email || '').toLowerCase();
+            if(email !== (ADMIN_ALLOWED_EMAIL || '').toLowerCase()){
+              alert('Signed-in account is not authorized to write. Use the configured admin account.');
+              return;
+            }
+          }
+
+          // If a profile file is selected and Storage is available, upload and replace profile.image
+          try{
+            if(firebaseStorage){
+              const uploadedUrl = await uploadProfileImageIfNeeded(data);
+              if(uploadedUrl){ data.profile = data.profile || {}; data.profile.image = uploadedUrl; }
+            }
+          }catch(e){ console.warn('Profile upload failed, continuing with existing image', e); }
+
+          // write to Firestore (collections-based) if available
+          try{
+            if(firestore && metaDocRef){
+              await writePortfolioCollections(data);
+            }
+          }catch(err){ console.error('Failed to write collections to Firestore', err); }
+
+          // also write a lightweight 'lastUpdate' key so other tabs/windows receive a storage event
+          try{ localStorage.setItem('portfolio:lastUpdate', String(Date.now())); }catch(e){}
+
+          // redirect to the public page so user can see changes immediately
+          window.location.href = 'index.html';
+        }catch(err){ console.error('Save flow error', err); alert('Save failed. See console for details.'); }
+      })();
     });
 
     logoutBtn.addEventListener('click', () => {
@@ -1049,6 +1128,26 @@
   }
 
   // Initialize
+    // If firebaseAuth is available, wire UI to auth state
+    try{
+      if(firebaseAuth && typeof firebaseAuth.onAuthStateChanged === 'function'){
+        firebaseAuth.onAuthStateChanged((user)=>{
+          if(user && user.email && user.email.toLowerCase() === (ADMIN_ALLOWED_EMAIL||'').toLowerCase()){
+            // authorized admin
+            const loginSection = document.querySelector('.login'); if(loginSection) loginSection.classList.add('hidden');
+            const banner = document.getElementById('signed-in-banner'); const bannerEmail = document.getElementById('signed-in-email'); if(banner && bannerEmail){ bannerEmail.textContent = user.email; banner.classList.remove('hidden'); }
+            editorSection.classList.remove('hidden');
+            renderEditor();
+          }else{
+            // not signed-in or unauthorized
+            // leave tryInitAdmin to present GIS sign-in; do not expose editor
+            const loginSection = document.querySelector('.login'); if(loginSection) loginSection.classList.remove('hidden');
+            const banner = document.getElementById('signed-in-banner'); if(banner) banner.classList.add('hidden');
+            editorSection.classList.add('hidden');
+          }
+        });
+      }
+    }catch(e){ /* ignore */ }
   try{
     // If Firestore is available, attempt initial load from collections/meta, migrate legacy single-doc if present, then subscribe to realtime updates.
     if(firestore){
