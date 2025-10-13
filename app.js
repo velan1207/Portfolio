@@ -64,11 +64,28 @@
   };
 
   let firestore = null;
-  let portfolioDocRef = null;
+  // Collection / doc refs
+  let metaDocRef = null; // portfolio_meta/main -> name/headline/about/profile/resume/contact
+  let projectsColRef = null; // portfolio_projects
+  let internshipsColRef = null; // portfolio_internships
+  let skillsColRef = null; // portfolio_skills (type: 'technical'|'soft')
+  let achievementsColRef = null; // portfolio_achievements
+  // legacy single-doc ref (used only for migration/fallback)
+  let legacyDocRef = null;
   try{
     if(window.firebase && typeof window.firebase.initializeApp === 'function'){
       try{ firebase.initializeApp(FIREBASE_CONFIG); }catch(e){}
-      try{ firestore = firebase.firestore(); portfolioDocRef = firestore.collection('portfolio').doc('data-v1'); }catch(e){ console.warn('Firestore init failed', e); }
+      try{
+        firestore = firebase.firestore();
+        // new collections-based layout
+        metaDocRef = firestore.collection('portfolio_meta').doc('main');
+        projectsColRef = firestore.collection('portfolio_projects');
+        internshipsColRef = firestore.collection('portfolio_internships');
+        skillsColRef = firestore.collection('portfolio_skills');
+        achievementsColRef = firestore.collection('portfolio_achievements');
+        // legacy single-doc kept for migration fallback
+        legacyDocRef = firestore.collection('portfolio').doc('data-v1');
+      }catch(e){ console.warn('Firestore init failed', e); }
     }
   }catch(e){ console.warn('Firebase not available', e); }
 
@@ -624,6 +641,146 @@
     };
   }
 
+  // --- Firestore helper functions for collections-based storage ---
+  async function clearAndWriteCollection(colRef, docs){
+    if(!colRef) return;
+    // delete existing docs in collection (batch) then write new ones
+    try{
+      const snap = await colRef.get();
+      const batch = firestore.batch();
+      snap.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    }catch(e){
+      // ignore if delete fails (permissions or not needed)
+    }
+    // write new docs in small batches
+    try{
+      const chunkSize = 400; // safe batch size lower than 500
+      for(let i=0;i<docs.length;i+=chunkSize){
+        const batch = firestore.batch();
+        const slice = docs.slice(i, i+chunkSize);
+        slice.forEach(doc => {
+          const ref = colRef.doc();
+          batch.set(ref, doc);
+        });
+        await batch.commit();
+      }
+    }catch(e){ console.error('Failed to write collection docs', e); }
+  }
+
+  async function writePortfolioCollections(data){
+    if(!firestore) throw new Error('Firestore not initialized');
+    // meta doc: name, headline, about, profile, resume, contact, lastUpdate
+    const meta = {
+      name: data.name||'', headline: data.headline||'', about: data.about||'', profile: data.profile||{}, resume: data.resume||'', contact: data.contact||{}, lastUpdate: Date.now()
+    };
+    const promises = [];
+    if(metaDocRef) promises.push(metaDocRef.set(meta));
+    // projects -> array of {title, desc}
+    if(projectsColRef) promises.push(clearAndWriteCollection(projectsColRef, (data.projects||[]).map((p, idx)=> Object.assign({}, p, { order: idx }))));
+    // internships
+    if(internshipsColRef) promises.push(clearAndWriteCollection(internshipsColRef, (data.internships||[]).map((i, idx)=> Object.assign({}, i, { order: idx }))));
+    // achievements -> each doc {text, order}
+    if(achievementsColRef) promises.push(clearAndWriteCollection(achievementsColRef, (data.achievements||[]).map((a, idx)=> ({ text: a, order: idx }))));
+    // skills -> write two types: technical and soft; clear any existing skill docs and write new ones
+    if(skillsColRef){
+      const skillsToWrite = [];
+      (data.skills && data.skills.technical || []).forEach((s, idx)=> skillsToWrite.push(Object.assign({}, s, { type: 'technical', order: idx })));
+      (data.skills && data.skills.soft || []).forEach((s, idx)=> skillsToWrite.push(Object.assign({}, {name: s.name}, { type: 'soft', order: idx })));
+      promises.push(clearAndWriteCollection(skillsColRef, skillsToWrite));
+    }
+    // Wait for all writes
+    await Promise.all(promises);
+  }
+
+  // Subscribe to collections and meta doc and update localStorage + UI when anything changes
+  function listenToPortfolioCollections(){
+    if(!firestore) return;
+    // meta doc
+    try{
+      if(metaDocRef && typeof metaDocRef.onSnapshot === 'function'){
+        metaDocRef.onSnapshot(snap => {
+          if(!snap.exists) return;
+          const meta = snap.data();
+          try{
+            const current = loadData();
+            const merged = Object.assign({}, current, { name: meta.name, headline: meta.headline, about: meta.about, profile: meta.profile, resume: meta.resume, contact: meta.contact });
+            saveData(merged);
+            renderMain(); renderEditor();
+          }catch(e){ console.error('Failed to apply meta snapshot', e); }
+        }, err => console.error('meta snapshot error', err));
+      }
+    }catch(e){ console.error('Failed to subscribe to metaDoc', e); }
+
+    // projects collection
+    try{
+      if(projectsColRef && typeof projectsColRef.onSnapshot === 'function'){
+        projectsColRef.onSnapshot(snap => {
+          try{
+            const projects = [];
+            snap.forEach(d=> projects.push(d.data()));
+            const current = loadData();
+            current.projects = projects.sort((a,b)=> (a.order||0)-(b.order||0));
+            saveData(current);
+            renderMain(); renderEditor();
+          }catch(e){ console.error('Failed to handle projects snapshot', e); }
+        }, err => console.error('projects snapshot error', err));
+      }
+    }catch(e){ console.error('Failed to subscribe to projectsColRef', e); }
+
+    // internships collection
+    try{
+      if(internshipsColRef && typeof internshipsColRef.onSnapshot === 'function'){
+        internshipsColRef.onSnapshot(snap => {
+          try{
+            const list = [];
+            snap.forEach(d=> list.push(d.data()));
+            const current = loadData();
+            current.internships = list.sort((a,b)=> (a.order||0)-(b.order||0));
+            saveData(current);
+            renderMain(); renderEditor();
+          }catch(e){ console.error('Failed to handle internships snapshot', e); }
+        }, err => console.error('internships snapshot error', err));
+      }
+    }catch(e){ console.error('Failed to subscribe to internshipsColRef', e); }
+
+    // achievements
+    try{
+      if(achievementsColRef && typeof achievementsColRef.onSnapshot === 'function'){
+        achievementsColRef.onSnapshot(snap => {
+          try{
+            const items = [];
+            snap.forEach(d=> items.push(d.data()));
+            const current = loadData();
+            current.achievements = items.sort((a,b)=> (a.order||0)-(b.order||0)).map(x=> x.text || x);
+            saveData(current);
+            renderMain(); renderEditor();
+          }catch(e){ console.error('Failed to handle achievements snapshot', e); }
+        }, err => console.error('achievements snapshot error', err));
+      }
+    }catch(e){ console.error('Failed to subscribe to achievementsColRef', e); }
+
+    // skills
+    try{
+      if(skillsColRef && typeof skillsColRef.onSnapshot === 'function'){
+        skillsColRef.onSnapshot(snap => {
+          try{
+            const tech = []; const soft = [];
+            snap.forEach(d=>{
+              const v = d.data();
+              if(v.type === 'soft') soft.push({name: v.name});
+              else tech.push({name: v.name, link: v.link || ''});
+            });
+            const current = loadData();
+            current.skills = { technical: tech.sort((a,b)=> (a.order||0)-(b.order||0)), soft: soft.sort((a,b)=> (a.order||0)-(b.order||0)) };
+            saveData(current);
+            renderMain(); renderEditor();
+          }catch(e){ console.error('Failed to handle skills snapshot', e); }
+        }, err => console.error('skills snapshot error', err));
+      }
+    }catch(e){ console.error('Failed to subscribe to skillsColRef', e); }
+  }
+
   // Simple demo login -> just checks email matches DEMO_EMAIL
   function tryInitAdmin(){
     if(!loginBtn) return; // not on admin page
@@ -839,11 +996,11 @@
       }
       // write locally first
       saveData(data);
-      // also write to Firestore (if available) so other clients see updates immediately
+      // also write to Firestore (collections-based) so other clients see updates immediately
       try{
-        if(portfolioDocRef){
-          const toWrite = Object.assign({}, data, { lastUpdate: Date.now() });
-          portfolioDocRef.set(toWrite).catch(err=> console.error('Failed to write to Firestore', err));
+        if(firestore && metaDocRef){
+          // perform an ordered write: meta doc + replace collection contents
+          writePortfolioCollections(data).catch(err => console.error('Failed to write collections to Firestore', err));
         }
       }catch(err){ console.error('Firestore write error', err); }
       // also write a lightweight 'lastUpdate' key so other tabs/windows receive a storage event
@@ -893,40 +1050,67 @@
 
   // Initialize
   try{
-    // If Firestore is available, attempt initial load from Firestore, then subscribe to realtime updates.
-    if(portfolioDocRef && typeof portfolioDocRef.get === 'function'){
-      portfolioDocRef.get().then(snap => {
+    // If Firestore is available, attempt initial load from collections/meta, migrate legacy single-doc if present, then subscribe to realtime updates.
+    if(firestore){
+      (async ()=>{
         try{
-          if(snap && snap.exists){
-            const d = snap.data();
-            if(d){
-              try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }catch(e){}
-            }
+          // If legacy doc exists, migrate into new collections (one-time)
+          if(legacyDocRef && typeof legacyDocRef.get === 'function'){
+            try{
+              const snap = await legacyDocRef.get();
+              if(snap && snap.exists){
+                const legacy = snap.data();
+                // migrate legacy structure into collections/meta
+                const migrated = Object.assign({}, legacy);
+                // write collections using helper
+                await writePortfolioCollections(migrated);
+                // optionally delete legacy doc? keep for now
+              }
+            }catch(e){ /* ignore migration errors */ }
           }
-        }catch(e){ console.error('Error reading initial Firestore doc', e); }
-        // render using whichever source is now available (Firestore-backed localStorage or defaults)
-        try{ renderMain(); }catch(e){}
-        // also render editor if admin
-        try{ renderEditor(); }catch(e){}
-      }).catch(err => {
-        console.warn('Initial Firestore get failed, falling back to localStorage', err);
-        try{ renderMain(); }catch(e){}
-      }).finally(()=>{
-        // subscribe to realtime updates
-        try{
-          if(portfolioDocRef && typeof portfolioDocRef.onSnapshot === 'function'){
-            portfolioDocRef.onSnapshot((snap)=>{
-              try{
-                if(!snap.exists) return;
-                const d = snap.data();
-                if(!d) return;
-                try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }catch(e){}
-                try{ renderMain(); renderEditor(); }catch(e){}
-              }catch(e){ console.error('Error handling Firestore snapshot', e); }
-            }, (err)=>{ console.error('Firestore snapshot error', err); });
+
+          // Attempt to read meta doc first to seed localStorage
+          if(metaDocRef && typeof metaDocRef.get === 'function'){
+            try{
+              const metaSnap = await metaDocRef.get();
+              if(metaSnap && metaSnap.exists){
+                const m = metaSnap.data();
+                const current = loadData();
+                const merged = Object.assign({}, current, { name: m.name, headline: m.headline, about: m.about, profile: m.profile, resume: m.resume, contact: m.contact });
+                saveData(merged);
+              }
+            }catch(e){ /* ignore read error */ }
           }
-        }catch(e){ console.error('Failed to subscribe to Firestore snapshots', e); }
-      });
+
+          // Try to read collections once to seed projects/internships/skills/achievements
+          try{
+            const [pSnap, iSnap, sSnap, aSnap] = await Promise.all([
+              projectsColRef ? projectsColRef.get().catch(()=>null) : Promise.resolve(null),
+              internshipsColRef ? internshipsColRef.get().catch(()=>null) : Promise.resolve(null),
+              skillsColRef ? skillsColRef.get().catch(()=>null) : Promise.resolve(null),
+              achievementsColRef ? achievementsColRef.get().catch(()=>null) : Promise.resolve(null)
+            ]);
+            const current = loadData();
+            if(pSnap){ const projects = []; pSnap.forEach(d=> projects.push(d.data())); current.projects = projects.sort((a,b)=> (a.order||0)-(b.order||0)); }
+            if(iSnap){ const list = []; iSnap.forEach(d=> list.push(d.data())); current.internships = list.sort((a,b)=> (a.order||0)-(b.order||0)); }
+            if(sSnap){ const tech=[]; const soft=[]; sSnap.forEach(d=>{ const v=d.data(); if(v.type==='soft') soft.push({name:v.name, order:v.order}); else tech.push({name:v.name, link:v.link||'', order:v.order}); }); current.skills = { technical: tech.sort((a,b)=> (a.order||0)-(b.order||0)), soft: soft.sort((a,b)=> (a.order||0)-(b.order||0)) }; }
+            if(aSnap){ const items=[]; aSnap.forEach(d=> items.push(d.data())); current.achievements = items.sort((a,b)=> (a.order||0)-(b.order||0)).map(x=> x.text || x); }
+            saveData(current);
+          }catch(e){ /* ignore seeding errors */ }
+
+          // render UI now
+          try{ renderMain(); }catch(e){}
+          try{ renderEditor(); }catch(e){}
+
+          // subscribe to realtime collection updates
+          listenToPortfolioCollections();
+        }catch(e){
+          console.warn('Firestore initial load failed, falling back to localStorage', e);
+          try{ renderMain(); }catch(e){}
+          tryInitAdmin();
+        }
+      })();
+    
     }else{
       // No Firestore - render using localStorage
       renderMain();
