@@ -228,6 +228,23 @@ button, a.btn, input, textarea { transition: box-shadow .18s ease, transform .12
 .btn .ripple{position:absolute;border-radius:50%;transform:scale(0);background:rgba(255,255,255,0.5);animation:ripple .6s linear;pointer-events:none}
 @keyframes ripple{to{transform:scale(4);opacity:0}}
 
+/* Google-branded sign-in button */
+.btn.google{
+	background:#fff;
+	color:#202124;
+	border:1px solid #dadce0;
+	box-shadow:0 1px 1px rgba(0,0,0,0.04);
+	padding:8px 12px;
+	display:inline-flex;
+	align-items:center;
+	gap:8px;
+	border-radius:8px;
+	font-weight:700;
+}
+.btn.google:hover{box-shadow:0 2px 4px rgba(60,64,67,0.12);border-color:#c6c8cb}
+.btn.google svg{display:block}
+.btn.google span{display:inline-block;vertical-align:middle}
+
 /* Card hover lift */
 .project-card, .section-card{transition:transform .18s cubic-bezier(.2,.9,.2,1), box-shadow .18s ease}
 .project-card:hover, .section-card:hover{transform:translateY(-6px);box-shadow:0 18px 46px rgba(2,6,23,0.06)}

@@ -856,7 +856,9 @@
           GOOGLE_CLIENT_ID = cfg.GOOGLE_CLIENT_ID;
           // populate debug panel (if present) so deployed site can show the effective config
           // debug-info intentionally left blank for privacy; do not print origin or client id here
-          if(window.google && typeof window.google.accounts !== 'undefined' && GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID.indexOf('REPLACE_WITH') === -1){
+          // Only initialize GIS if library is present and the placeholder container exists
+          const gisContainer = document.getElementById('g_id_signin');
+          if(window.google && typeof window.google.accounts !== 'undefined' && gisContainer && GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID.indexOf('REPLACE_WITH') === -1){
             // choose verification endpoint based on environment:
             // - local dev server exposes /auth/google
             // - Vercel/serverless deployment exposes /api/auth/google
@@ -905,7 +907,7 @@
                 }
               }
             });
-            window.google.accounts.id.renderButton(document.getElementById('g_id_signin'), { theme: 'outline', size: 'large' });
+            window.google.accounts.id.renderButton(gisContainer, { theme: 'outline', size: 'large' });
             // optionally, you can call prompt() to show credential chooser
             // window.google.accounts.id.prompt();
           }else{
@@ -926,6 +928,23 @@
         // prefer history back if possible, otherwise go to index.html
         if(window.history && window.history.length > 1) window.history.back();
         else window.location.href = 'index.html';
+      });
+    }
+
+    // Firebase sign-in / sign-out buttons (if present)
+    const fbSignInBtn = document.getElementById('firebase-signin-btn');
+    const fbSignOutBtn = document.getElementById('firebase-signout-btn');
+    if(fbSignInBtn && firebaseAuth){
+      fbSignInBtn.addEventListener('click', async ()=>{
+        try{
+          const provider = new firebase.auth.GoogleAuthProvider();
+          await firebaseAuth.signInWithPopup(provider);
+        }catch(e){ console.error('Firebase signInWithPopup failed', e); alert('Sign-in failed'); }
+      });
+    }
+    if(fbSignOutBtn && firebaseAuth){
+      fbSignOutBtn.addEventListener('click', async ()=>{
+        try{ await firebaseAuth.signOut(); }catch(e){ console.error(e); }
       });
     }
 
@@ -1082,6 +1101,13 @@
           // also write a lightweight 'lastUpdate' key so other tabs/windows receive a storage event
           try{ localStorage.setItem('portfolio:lastUpdate', String(Date.now())); }catch(e){}
 
+          // If using Firebase Auth, sign out the admin user automatically after save
+          try{
+            if(firebaseAuth){
+              await firebaseAuth.signOut();
+            }
+          }catch(e){ console.warn('Auto sign-out failed', e); }
+
           // redirect to the public page so user can see changes immediately
           window.location.href = 'index.html';
         }catch(err){ console.error('Save flow error', err); alert('Save failed. See console for details.'); }
@@ -1089,13 +1115,26 @@
     });
 
     logoutBtn.addEventListener('click', () => {
-      editorSection.classList.add('hidden');
-      // restore login area and hide banner
-      const loginSection = document.querySelector('.login');
-      if(loginSection) loginSection.classList.remove('hidden');
-      const banner = document.getElementById('signed-in-banner');
-      if(banner) banner.classList.add('hidden');
-      loginMsg.textContent = 'Logged out. Sign in to edit again.';
+      (async ()=>{
+        try{
+          // If using Firebase Auth, sign out the user to clear session
+          if(firebaseAuth){
+            await firebaseAuth.signOut();
+          }
+        }catch(e){ console.warn('Sign-out failed', e); }
+        // hide editor and show login area
+        editorSection.classList.add('hidden');
+        const loginSection = document.querySelector('.login');
+        if(loginSection) loginSection.classList.remove('hidden');
+        const banner = document.getElementById('signed-in-banner');
+        if(banner) banner.classList.add('hidden');
+        // adjust Firebase sign-in/out buttons if present
+        const fbSignInBtn = document.getElementById('firebase-signin-btn');
+        const fbSignOutBtn = document.getElementById('firebase-signout-btn');
+        if(fbSignInBtn) fbSignInBtn.style.display = '';
+        if(fbSignOutBtn) fbSignOutBtn.style.display = 'none';
+        loginMsg.textContent = 'Logged out. Sign in to edit again.';
+      })();
     });
 
     // Fullscreen support removed (button no longer present in admin.html)
@@ -1132,18 +1171,23 @@
     try{
       if(firebaseAuth && typeof firebaseAuth.onAuthStateChanged === 'function'){
         firebaseAuth.onAuthStateChanged((user)=>{
+          const fbSignInBtn = document.getElementById('firebase-signin-btn');
+          const fbSignOutBtn = document.getElementById('firebase-signout-btn');
           if(user && user.email && user.email.toLowerCase() === (ADMIN_ALLOWED_EMAIL||'').toLowerCase()){
             // authorized admin
             const loginSection = document.querySelector('.login'); if(loginSection) loginSection.classList.add('hidden');
             const banner = document.getElementById('signed-in-banner'); const bannerEmail = document.getElementById('signed-in-email'); if(banner && bannerEmail){ bannerEmail.textContent = user.email; banner.classList.remove('hidden'); }
             editorSection.classList.remove('hidden');
+            if(fbSignInBtn) fbSignInBtn.style.display = 'none';
+            if(fbSignOutBtn) fbSignOutBtn.style.display = '';
             renderEditor();
           }else{
             // not signed-in or unauthorized
-            // leave tryInitAdmin to present GIS sign-in; do not expose editor
             const loginSection = document.querySelector('.login'); if(loginSection) loginSection.classList.remove('hidden');
             const banner = document.getElementById('signed-in-banner'); if(banner) banner.classList.add('hidden');
             editorSection.classList.add('hidden');
+            if(fbSignInBtn) fbSignInBtn.style.display = '';
+            if(fbSignOutBtn) fbSignOutBtn.style.display = 'none';
           }
         });
       }
@@ -1203,6 +1247,8 @@
 
           // subscribe to realtime collection updates
           listenToPortfolioCollections();
+          // Ensure admin UI wiring (sign-in buttons, handlers) runs regardless of Firestore availability
+          tryInitAdmin();
         }catch(e){
           console.warn('Firestore initial load failed, falling back to localStorage', e);
           try{ renderMain(); }catch(e){}

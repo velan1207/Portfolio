@@ -7,6 +7,26 @@
   ],
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/$1.js" },
-    { "src": "/", "dest": "/index.html" }
+    {
+      "src": "/admin.html",
+      "headers": {
+        "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+        "Cross-Origin-Embedder-Policy": "unsafe-none",
+        "Access-Control-Allow-Origin": "https://velan-cse-portfolio.vercel.app",
+        "Vary": "Origin"
+      },
+      "dest": "/admin.html"
+    },
+    {
+      "src": "/",
+      "headers": {
+        "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+        "Cross-Origin-Embedder-Policy": "unsafe-none",
+        "Access-Control-Allow-Origin": "https://velan-cse-portfolio.vercel.app",
+        "Vary": "Origin"
+      },
+      "dest": "/index.html"
+    }
   ]
 }
+

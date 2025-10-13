@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <!-- Google Identity Services (client-only). Replace CLIENT_ID with your OAuth 2.0 Client ID -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <!-- Google Identity Services removed in favor of Firebase Auth button -->
   </head>
   <body>
   <main class="container admin full-bleed">
@@ -35,7 +35,23 @@
         </div>
         <div style="margin-top:10px">
           <!-- Google Sign-In button will render here. Configure `google-config.json` with your OAuth Client ID and start the dev server. -->
-          <div id="g_id_signin"></div>
+          <!-- Using Firebase Auth sign-in button below -->
+          <!-- Firebase Auth sign-in fallback (uses Firebase Auth popup) -->
+          <div style="margin-top:8px;">
+            <button id="firebase-signin-btn" class="btn google">
+              <span aria-hidden="true" style="display:inline-flex;align-items:center;">
+                <!-- Google G logo (inline SVG) -->
+                <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="margin-right:8px;">
+                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.07 1.52 7.46 2.78l5.46-5.3C34.8 3.1 29.78 1.5 24 1.5 14.88 1.5 7.38 6.96 4 14.09l6.33 4.92C12.84 12.2 17.97 9.5 24 9.5z"/>
+                  <path fill="#34A853" d="M46.5 24c0-1.63-.16-3.2-.46-4.7H24v9.05h12.7c-.54 2.92-2.43 5.39-5.18 6.98l7.9 6.08C43.83 37.2 46.5 31.98 46.5 24z"/>
+                  <path fill="#4A90E2" d="M10.33 29.01A14.98 14.98 0 0 1 9 24c0-1.52.26-3  .74-4.37L3.41 14.7C1.34 18.11.5 21.96.5 26c0 4.05.86 7.9 2.9 11.3l7-8.29z"/>
+                  <path fill="#FBBC05" d="M24 46.5c6.32 0 11.63-2.09 15.5-5.67l-7.9-6.08c-2.17 1.46-4.95 2.33-7.6 2.33-6.07 0-11.2-3.7-13.66-8.9L4 33.91C7.38 41.04 14.88 46.5 24 46.5z"/>
+                </svg>
+              </span>
+              <span>Sign in with Google</span>
+            </button>
+            <button id="firebase-signout-btn" class="btn" style="display:none;">Sign out</button>
+          </div>
           <!-- no demo fallback: only real Google Sign-In button will be shown -->
         </div>
         <p id="login-msg" class="muted">Use the <b>Admin</b> sign-in to unlock editing.</p>

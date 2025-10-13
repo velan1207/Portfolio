@@ -8,31 +8,31 @@ service cloud.firestore {
     // meta doc (public read)
     match /portfolio_meta/main {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == "ADMIN_UID" || (request.auth.token.email == "admin@example.com");
+      allow write: if request.auth != null && request.auth.uid == "ADMIN_UID" || (request.auth.token.email == "velanm.cse2024@citchennai.net");
     }
 
     // projects collection
     match /portfolio_projects/{docId} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == "ADMIN_UID" || (request.auth.token.email == "admin@example.com");
+      allow write: if request.auth != null && request.auth.uid == "ADMIN_UID" || (request.auth.token.email == "velanm.cse2024@citchennai.net");
     }
 
     // internships
     match /portfolio_internships/{docId} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == "ADMIN_UID" || (request.auth.token.email == "admin@example.com");
+      allow write: if request.auth != null && request.auth.uid == "ADMIN_UID" || (request.auth.token.email == "velanm.cse2024@citchennai.net");
     }
 
     // skills
     match /portfolio_skills/{docId} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == "ADMIN_UID" || (request.auth.token.email == "admin@example.com");
+      allow write: if request.auth != null && request.auth.uid == "ADMIN_UID" || (request.auth.token.email == "velanm.cse2024@citchennai.net");
     }
 
     // achievements
     match /portfolio_achievements/{docId} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == "ADMIN_UID" || (request.auth.token.email == "admin@example.com");
+      allow write: if request.auth != null && request.auth.uid == "ADMIN_UID" || (request.auth.token.email == "velanm.cse2024@citchennai.net");
     }
 
     // default deny
