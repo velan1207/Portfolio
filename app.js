@@ -33,10 +33,8 @@
   const addTechSkillBtn = document.getElementById('add-tech-skill');
   const softSkillsEditor = document.getElementById('soft-skills-editor');
   const addSoftSkillBtn = document.getElementById('add-soft-skill');
-  const internshipInput = document.getElementById('internship-input');
-  const internshipLinkInput = document.getElementById('internship-link');
-  const internshipCompanyInput = document.getElementById('internship-company');
-  const internshipRoleInput = document.getElementById('internship-role');
+  const internshipsEditor = document.getElementById('internships-editor');
+  const addInternshipBtn = document.getElementById('add-internship');
   
   const resumeLinkInput = document.getElementById('resume-link');
   const contactEmail = document.getElementById('contact-email');
@@ -89,12 +87,14 @@
         'HackerRank and CodeChef problem solving (400+ LeetCode, 900+ CodeChef)',
         'Google Cloud / Hack2Skill challenges'
       ],
-      internship: {
-        company: 'AICTE–EduSkills Virtual Internship',
-        role: 'Android App Development Intern (Jun 2025)',
-        text: '<ul><li>Built Flutter apps (calculator, to-do); implemented state management.</li><li>Used Git/GitHub for version control and deployments.</li></ul>',
-        link: ''
-      },
+      internships: [
+        {
+          company: 'AICTE–EduSkills Virtual Internship',
+          role: 'Android App Development Intern (Jun 2025)',
+          text: '<ul><li>Built Flutter apps (calculator, to-do); implemented state management.</li><li>Used Git/GitHub for version control and deployments.</li></ul>',
+          link: ''
+        }
+      ],
       resume: 'img/Velan_M_Resume 11-10-2025.pdf',
   contact: {email:'velanm.cse2024@citchennai.net', phone:'+91 7904092680', linkedin:'https://linkedin.com/in/velan-m', github:'https://github.com/velan1207'}
     };
@@ -193,7 +193,8 @@
       projectsListEl.appendChild(card);
     };
     // Include portfolio as a project, but render internship separately
-    const internship = data.internship || {};
+  // support legacy single 'internship' object by normalizing to internships array
+  const internship = (data.internships && data.internships[0]) || data.internship || {};
 
     // Avoid duplicate internship entries: if an internship section exists, skip projects whose
     // title mentions 'intern' to prevent duplicates.
@@ -208,25 +209,33 @@
     projectsToRender.forEach(p => renderProjectCard(p.title, p.desc));
     if(internship.portfolioText) renderProjectCard('Portfolio', internship.portfolioText);
 
-    // Render internship section (separate)
-    const internshipTextEl = document.getElementById('internship-text');
-    const internshipLinkEl = document.getElementById('internship-link');
-    const internshipHeading = document.querySelector('#internship h3');
-    if(internshipHeading){
-      internshipHeading.textContent = internship.company ? internship.company : 'Internship';
-    }
-    // show role under heading if present
-    if(internshipTextEl){
-      const roleEl = document.createElement('div');
-      roleEl.className = 'intern-role';
-      roleEl.textContent = internship.role || '';
-      // clear previous children but keep role at top
-      internshipTextEl.innerHTML = internship.text || '';
-      if(internship.role) internshipTextEl.parentNode.insertBefore(roleEl, internshipTextEl);
-    }
-    if(internshipLinkEl){
-      const a = internshipLinkEl.querySelector('a');
-      if(a) a.href = internship.link || '#';
+    // Render internships section (supports multiple internships)
+    const internshipSection = document.getElementById('internship');
+    if(internshipSection){
+      const container = document.createElement('div');
+      container.id = 'internship-list';
+      const internships = data.internships || (data.internship ? [data.internship] : []);
+      if(internships.length === 0){
+        container.innerHTML = '<p id="internship-text">Internships provide industry exposure and hands-on experience.</p>';
+      }else{
+        internships.forEach(inst => {
+          const block = document.createElement('div');
+          block.className = 'intern-block';
+          const h3 = document.createElement('h3');
+          h3.textContent = inst.company || 'Internship';
+          const role = document.createElement('div'); role.className = 'intern-role'; role.textContent = inst.role || '';
+          const txt = document.createElement('div'); txt.innerHTML = inst.text || '';
+          const plink = document.createElement('p');
+          if(inst.link) plink.innerHTML = `Details: <a href="${inst.link}">${inst.link}</a>`;
+          block.appendChild(h3); if(inst.role) block.appendChild(role); block.appendChild(txt); if(inst.link) block.appendChild(plink);
+          container.appendChild(block);
+        });
+      }
+      // replace existing content inside internship section
+      const existing = document.getElementById('internship-content');
+      if(existing) internshipSection.removeChild(existing);
+      container.id = 'internship-content';
+      internshipSection.appendChild(container);
     }
 
     // no legacy internshipContainer handling — internship is rendered into its own section
@@ -318,10 +327,12 @@
         achievementsEditor.appendChild(node);
       });
     }
-  internshipInput.innerHTML = (data.internship && data.internship.text) || '';
-  internshipLinkInput.value = (data.internship && data.internship.link) || '';
-  if(internshipCompanyInput) internshipCompanyInput.value = (data.internship && data.internship.company) || '';
-  if(internshipRoleInput) internshipRoleInput.value = (data.internship && data.internship.role) || '';
+  // populate internships editor (multiple)
+  if(internshipsEditor){
+    internshipsEditor.innerHTML = '';
+    const list = data.internships || (data.internship ? [data.internship] : []);
+    list.forEach((inst, idx) => internshipsEditor.appendChild(createInternshipEditor(inst, idx)));
+  }
     resumeLinkInput.value = data.resume || '';
     contactEmail.value = (data.contact && data.contact.email) || '';
     contactPhone.value = (data.contact && data.contact.phone) || '';
@@ -348,6 +359,37 @@
         }
       })();
     }
+  }
+
+  function createInternshipEditor(inst, idx){
+    const wrap = document.createElement('div');
+    wrap.className = 'project-item internship-item';
+
+    const header = document.createElement('div');
+    header.style.display = 'flex'; header.style.gap = '8px'; header.style.alignItems = 'center';
+    const company = document.createElement('input'); company.placeholder = 'Company / Organization'; company.value = inst.company || '';
+    const role = document.createElement('input'); role.placeholder = 'Role / Title'; role.value = inst.role || '';
+    const remove = document.createElement('button'); remove.className = 'btn'; remove.textContent = 'Remove';
+    header.appendChild(company); header.appendChild(role); header.appendChild(remove);
+
+    const toolbar = document.createElement('div'); toolbar.className = 'editor-toolbar'; toolbar.setAttribute('data-target', `internship-rte-${idx}`);
+    ['bold','italic','insertUnorderedList','createLink','removeFormat'].forEach(cmd=>{
+      const b = document.createElement('button'); b.type='button'; b.className='btn'; b.setAttribute('data-cmd',cmd);
+      b.textContent = cmd === 'insertUnorderedList' ? '• List' : (cmd === 'createLink' ? 'Link' : cmd === 'removeFormat' ? 'Clear' : cmd === 'bold' ? 'B' : 'I');
+      b.addEventListener('click', ()=>{
+        if(cmd === 'createLink'){ const url = prompt('Enter URL'); if(url) document.execCommand('createLink', false, url); return; }
+        document.execCommand(cmd, false, null);
+      });
+      toolbar.appendChild(b);
+    });
+
+    const rte = document.createElement('div'); rte.className='rte'; rte.id = `internship-rte-${idx}`; rte.contentEditable = true; rte.innerHTML = inst.text || '';
+    const linkInput = document.createElement('input'); linkInput.placeholder = 'Optional link (offer/letter/project)'; linkInput.value = inst.link || '';
+
+    remove.addEventListener('click', ()=> wrap.remove());
+
+    wrap.appendChild(header); wrap.appendChild(toolbar); wrap.appendChild(rte); wrap.appendChild(linkInput);
+    return wrap;
   }
 
   function createProjectEditor(project, idx){
@@ -500,7 +542,19 @@
         if(v) achievements.push(v);
       });
     }
-  const internship = {company: (internshipCompanyInput && internshipCompanyInput.value||'').trim(), role: (internshipRoleInput && internshipRoleInput.value||'').trim(), text: (internshipInput.innerHTML||'').trim(), link: internshipLinkInput.value.trim()};
+    // collect internships from editor
+    const internships = [];
+    if(internshipsEditor){
+      internshipsEditor.querySelectorAll('.internship-item').forEach(el => {
+        const inputs = el.querySelectorAll('input');
+        const company = inputs[0]?.value?.trim() || '';
+        const role = inputs[1]?.value?.trim() || '';
+        const text = el.querySelector('.rte')?.innerHTML?.trim() || '';
+        // optional third input for the link
+        const link = inputs[2]?.value?.trim() || '';
+        if(company || role || text || link) internships.push({company, role, text, link});
+      });
+    }
     const resume = (resumeLinkInput.value||'').trim();
     const contact = {email: (contactEmail.value||'').trim(), phone: (contactPhone.value||'').trim(), linkedin: (contactLinkedIn.value||'').trim()};
     return {
@@ -509,7 +563,7 @@
       about: (aboutInput && aboutInput.innerHTML) ? aboutInput.innerHTML.trim() : (aboutInput.value || '').trim(),
       projects,
       skills: {technical: tech, soft},
-      internship, resume, contact,
+      internships, resume, contact,
       achievements
     };
   }
@@ -643,11 +697,16 @@
         techSkillsEditor.appendChild(createSkillEditor({name:'',link:''}));
       });
     }
-    if(addSoftSkillBtn){
-      addSoftSkillBtn.addEventListener('click', ()=>{
-        softSkillsEditor.appendChild(createSkillEditor({name:'',link:''}));
-      });
-    }
+      if(addSoftSkillBtn){
+        addSoftSkillBtn.addEventListener('click', ()=>{
+          softSkillsEditor.appendChild(createSkillEditor({name:'',link:''}));
+        });
+      }
+      if(addInternshipBtn){
+        addInternshipBtn.addEventListener('click', ()=>{
+          if(internshipsEditor) internshipsEditor.appendChild(createInternshipEditor({company:'',role:'',text:'',link:''}, Date.now()));
+        });
+      }
     // achievements add
     const addAchievementBtn = document.getElementById('add-achievement');
     if(addAchievementBtn){
@@ -710,8 +769,8 @@
   if(softSkillsEditor){ softSkillsEditor.innerHTML = ''; skills.soft.forEach(s=> softSkillsEditor.appendChild(createSkillEditor(s))); }
   // populate achievements editor
   if(achievementsEditor){ achievementsEditor.innerHTML = ''; achievements.forEach(a=> achievementsEditor.appendChild(createAchievementEditor(a))); }
-        internshipInput.value = internship.text || '';
-        internshipLinkInput.value = internship.link || '';
+  // populate internships editor (imported)
+  if(internshipsEditor){ internshipsEditor.innerHTML = ''; internshipsEditor.appendChild(createInternshipEditor(internship, 0)); }
         resumeLinkInput.value = resume || '';
         contactEmail.value = contact.email || '';
         contactPhone.value = contact.phone || '';
@@ -740,8 +799,8 @@
 
     saveBtn.addEventListener('click', () => {
       const data = getEditorData();
-      // If internship text is provided, avoid saving projects that look like internship entries
-      if(data.internship && data.internship.text){
+      // If any internship text is provided, avoid saving projects that look like internship entries
+      if(data.internships && data.internships.some(i => i.text && i.text.trim())){
         data.projects = (data.projects||[]).filter(p => !(p.title||'').toLowerCase().includes('intern'));
       }
       saveData(data);
