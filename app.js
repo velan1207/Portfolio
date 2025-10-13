@@ -634,7 +634,7 @@
           const cfg = await cfgResp.json();
           GOOGLE_CLIENT_ID = cfg.GOOGLE_CLIENT_ID;
           // populate debug panel (if present) so deployed site can show the effective config
-          try{ const dbg = document.getElementById('debug-info'); if(dbg){ dbg.textContent = `origin=${location.origin} client_id=${GOOGLE_CLIENT_ID}`; } }catch(e){}
+          // debug-info intentionally left blank for privacy; do not print origin or client id here
           if(window.google && typeof window.google.accounts !== 'undefined' && GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID.indexOf('REPLACE_WITH') === -1){
             // choose verification endpoint based on environment:
             // - local dev server exposes /auth/google
