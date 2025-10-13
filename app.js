@@ -893,22 +893,46 @@
 
   // Initialize
   try{
-    // If Firestore is available, subscribe to realtime updates and apply them to localStorage + UI
-    if(portfolioDocRef && typeof portfolioDocRef.onSnapshot === 'function'){
-      portfolioDocRef.onSnapshot((snap)=>{
+    // If Firestore is available, attempt initial load from Firestore, then subscribe to realtime updates.
+    if(portfolioDocRef && typeof portfolioDocRef.get === 'function'){
+      portfolioDocRef.get().then(snap => {
         try{
-          if(!snap.exists) return;
-          const d = snap.data();
-          if(!d) return;
-          // persist to localStorage so existing code paths can read it
-          try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }catch(e){}
-          // re-render UI with fresh data
-          try{ renderMain(); renderEditor(); }catch(e){}
-        }catch(e){ console.error('Error handling Firestore snapshot', e); }
-      }, (err)=>{ console.error('Firestore snapshot error', err); });
+          if(snap && snap.exists){
+            const d = snap.data();
+            if(d){
+              try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }catch(e){}
+            }
+          }
+        }catch(e){ console.error('Error reading initial Firestore doc', e); }
+        // render using whichever source is now available (Firestore-backed localStorage or defaults)
+        try{ renderMain(); }catch(e){}
+        // also render editor if admin
+        try{ renderEditor(); }catch(e){}
+      }).catch(err => {
+        console.warn('Initial Firestore get failed, falling back to localStorage', err);
+        try{ renderMain(); }catch(e){}
+      }).finally(()=>{
+        // subscribe to realtime updates
+        try{
+          if(portfolioDocRef && typeof portfolioDocRef.onSnapshot === 'function'){
+            portfolioDocRef.onSnapshot((snap)=>{
+              try{
+                if(!snap.exists) return;
+                const d = snap.data();
+                if(!d) return;
+                try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }catch(e){}
+                try{ renderMain(); renderEditor(); }catch(e){}
+              }catch(e){ console.error('Error handling Firestore snapshot', e); }
+            }, (err)=>{ console.error('Firestore snapshot error', err); });
+          }
+        }catch(e){ console.error('Failed to subscribe to Firestore snapshots', e); }
+      });
+    }else{
+      // No Firestore - render using localStorage
+      renderMain();
+      tryInitAdmin();
     }
-    renderMain();
-    tryInitAdmin();
+
     // If another tab updates storage, re-render to pick up changes instantly
     window.addEventListener('storage', (e)=>{
       if(!e) return;
