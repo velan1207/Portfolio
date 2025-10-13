@@ -25,7 +25,6 @@
       <section class="login">
         <h2>Login</h2>
   <p>Sign in with your Google account (use the account you configured for admin access) to edit the site locally.</p>
-  <p class="muted">Tip: For real Google sign-in, run the included dev server and open <code>http://localhost:3000/admin.html</code>.</p>
   <!-- Hidden: manual email input removed from visible UI because Google Sign-In is used -->
   <label for="email" style="display:none;">Email</label>
   <input id="email" type="email" placeholder="you@example.com" style="display:none;">
@@ -37,11 +36,9 @@
         <div style="margin-top:10px">
           <!-- Google Sign-In button will render here. Configure `google-config.json` with your OAuth Client ID and start the dev server. -->
           <div id="g_id_signin"></div>
-          <div id="g_fallback" style="margin-top:8px;display:none;">
-            <button id="g_fallback_btn" class="btn">Sign in with Google (demo)</button>
-          </div>
+          <!-- no demo fallback: only real Google Sign-In button will be shown -->
         </div>
-        <p id="login-msg" class="muted">Use the demo email above to unlock editing.</p>
+        <p id="login-msg" class="muted">Use the <b>Admin</b> sign-in to unlock editing.</p>
         <div id="signed-in-banner" class="hidden signed-in-banner">Signed in as <strong id="signed-in-email">demo user</strong></div>
         <div id="debug-info" class="small muted" style="margin-top:8px"></div>
       </section>
@@ -58,6 +55,17 @@
 
         <label for="headline-input">Headline</label>
         <input id="headline-input" type="text">
+
+        <h3>Profile Image</h3>
+        <label for="profile-image-url">Image URL</label>
+        <input id="profile-image-url" type="url" placeholder="img/velan.jpg">
+        <label for="profile-image-file">Or upload image</label>
+        <input id="profile-image-file" type="file" accept="image/*">
+        <div style="margin-top:8px;">
+          <img id="profile-image-preview" src="img/velan.jpg" alt="preview" style="width:96px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)">
+        </div>
+        <label for="profile-image-caption">Image caption</label>
+        <input id="profile-image-caption" type="text" placeholder="e.g. Student at Chennai Institute Of Technology">
 
         <label for="about-input">About (visual editor)</label>
         <div class="editor-toolbar" data-target="about-input">

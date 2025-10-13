@@ -40,6 +40,10 @@
   const contactEmail = document.getElementById('contact-email');
   const contactPhone = document.getElementById('contact-phone');
   const contactLinkedIn = document.getElementById('contact-linkedin');
+  const profileImageUrlInput = document.getElementById('profile-image-url');
+  const profileImageFileInput = document.getElementById('profile-image-file');
+  const profileImagePreview = document.getElementById('profile-image-preview');
+  const profileImageCaptionInput = document.getElementById('profile-image-caption');
   const saveBtn = document.getElementById('save-btn');
   const logoutBtn = document.getElementById('logout-btn');
   const importBtn = document.getElementById('import-btn');
@@ -95,6 +99,10 @@
           link: ''
         }
       ],
+      profile: {
+        image: 'img/velan.jpg', // data URL or relative URL
+        caption: 'Student at Chennai Institute Of Technology'
+      },
       resume: 'img/Velan_M_Resume 11-10-2025.pdf',
   contact: {email:'velanm.cse2024@citchennai.net', phone:'+91 7904092680', linkedin:'https://linkedin.com/in/velan-m', github:'https://github.com/velan1207'}
     };
@@ -123,6 +131,12 @@
     const data = loadData();
   nameEl.textContent = data.name;
   headlineEl.textContent = data.headline;
+  // profile image and caption
+  const profileImgEl = document.getElementById('profile-image');
+  const profileImgLink = document.getElementById('profile-image-link');
+  const profileCaptionEl = document.getElementById('profile-image-caption');
+  if(profileImgEl && data.profile && data.profile.image){ profileImgEl.src = data.profile.image; if(profileImgLink) profileImgLink.href = data.profile.image; }
+  if(profileCaptionEl && data.profile && data.profile.caption) profileCaptionEl.innerHTML = data.profile.caption;
   if(aboutEl) aboutEl.innerHTML = data.about || '';
     // Skills: technical and soft
     if(techSkillsListEl){
@@ -359,6 +373,25 @@
         }
       })();
     }
+  // profile fields
+  if(profileImageUrlInput) profileImageUrlInput.value = (data.profile && data.profile.image) || '';
+  if(profileImageCaptionInput) profileImageCaptionInput.value = (data.profile && data.profile.caption) || '';
+  if(profileImagePreview){ profileImagePreview.src = (data.profile && data.profile.image) || 'img/velan.jpg'; }
+  }
+
+  // wire profile image file input preview -> convert to data URL
+  if(profileImageFileInput){
+    profileImageFileInput.addEventListener('change', (e)=>{
+      const f = e.target.files && e.target.files[0];
+      if(!f) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        const dataUrl = reader.result;
+        if(profileImagePreview) profileImagePreview.src = dataUrl;
+        if(profileImageUrlInput) profileImageUrlInput.value = dataUrl;
+      };
+      reader.readAsDataURL(f);
+    });
   }
 
   function createInternshipEditor(inst, idx){
@@ -557,6 +590,7 @@
     }
     const resume = (resumeLinkInput.value||'').trim();
     const contact = {email: (contactEmail.value||'').trim(), phone: (contactPhone.value||'').trim(), linkedin: (contactLinkedIn.value||'').trim()};
+    const profile = { image: (profileImageUrlInput && profileImageUrlInput.value || '').trim(), caption: (profileImageCaptionInput && profileImageCaptionInput.value || '').trim() };
     return {
       name: nameInput.value.trim(),
       headline: headlineInput.value.trim(),
@@ -564,6 +598,7 @@
       projects,
       skills: {technical: tech, soft},
       internships, resume, contact,
+      profile,
       achievements
     };
   }
@@ -646,32 +681,10 @@
             // optionally, you can call prompt() to show credential chooser
             // window.google.accounts.id.prompt();
           }else{
-            // show fallback demo button when client id not configured locally
-            const fallback = document.getElementById('g_fallback');
-            const fallbackBtn = document.getElementById('g_fallback_btn');
-            if(fallback && fallbackBtn){
-              fallback.style.display = '';
-              fallbackBtn.addEventListener('click', ()=>{
-                const e = prompt('Enter email to sign in (demo):', 'velanm.cse2024@citchennai.net');
-                if(e){
-                  emailInput.value = e;
-                  // trigger demo login flow (keeps backward compatibility)
-                  loginBtn.click();
-                }
-              });
-            }
+            // GIS not available or client id missing -> keep login area visible without demo fallback
           }
         }catch(err){
-          // could not load config or GIS not available; show fallback demo
-          const fallback = document.getElementById('g_fallback');
-          const fallbackBtn = document.getElementById('g_fallback_btn');
-          if(fallback && fallbackBtn){
-            fallback.style.display = '';
-            fallbackBtn.addEventListener('click', ()=>{
-              const e = prompt('Enter email to sign in (demo):', 'velanm.cse2024@citchennai.net');
-              if(e){ emailInput.value = e; loginBtn.click(); }
-            });
-          }
+          // could not load config or GIS not available; keep demo disabled so only configured GIS will work
         }
       })();
     }catch(e){
