@@ -51,6 +51,27 @@
   // Google OAuth client id will be loaded from google-config.json served by the dev server.
   let GOOGLE_CLIENT_ID = null;
 
+  // --- Firebase / Firestore realtime sync ---
+  // NOTE: This uses the compat SDK loaded in admin.html/index.html. Ensure the SDK script tags are present.
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyD0KmDOYkBgaWmherPgupciFlrUNoTpL1s",
+    authDomain: "portfolio-f1b31.firebaseapp.com",
+    projectId: "portfolio-f1b31",
+    storageBucket: "portfolio-f1b31.firebasestorage.app",
+    messagingSenderId: "831274339687",
+    appId: "1:831274339687:web:8fb7be5fdc341ec41033c2",
+    measurementId: "G-69W84YT32Q"
+  };
+
+  let firestore = null;
+  let portfolioDocRef = null;
+  try{
+    if(window.firebase && typeof window.firebase.initializeApp === 'function'){
+      try{ firebase.initializeApp(FIREBASE_CONFIG); }catch(e){}
+      try{ firestore = firebase.firestore(); portfolioDocRef = firestore.collection('portfolio').doc('data-v1'); }catch(e){ console.warn('Firestore init failed', e); }
+    }
+  }catch(e){ console.warn('Firebase not available', e); }
+
   function defaultData(){
     return {
       name: 'Velan M',
@@ -816,7 +837,15 @@
       if(data.internships && data.internships.some(i => i.text && i.text.trim())){
         data.projects = (data.projects||[]).filter(p => !(p.title||'').toLowerCase().includes('intern'));
       }
+      // write locally first
       saveData(data);
+      // also write to Firestore (if available) so other clients see updates immediately
+      try{
+        if(portfolioDocRef){
+          const toWrite = Object.assign({}, data, { lastUpdate: Date.now() });
+          portfolioDocRef.set(toWrite).catch(err=> console.error('Failed to write to Firestore', err));
+        }
+      }catch(err){ console.error('Firestore write error', err); }
       // also write a lightweight 'lastUpdate' key so other tabs/windows receive a storage event
       try{ localStorage.setItem('portfolio:lastUpdate', String(Date.now())); }catch(e){}
       // redirect to the public page so user can see changes immediately
@@ -864,6 +893,20 @@
 
   // Initialize
   try{
+    // If Firestore is available, subscribe to realtime updates and apply them to localStorage + UI
+    if(portfolioDocRef && typeof portfolioDocRef.onSnapshot === 'function'){
+      portfolioDocRef.onSnapshot((snap)=>{
+        try{
+          if(!snap.exists) return;
+          const d = snap.data();
+          if(!d) return;
+          // persist to localStorage so existing code paths can read it
+          try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }catch(e){}
+          // re-render UI with fresh data
+          try{ renderMain(); renderEditor(); }catch(e){}
+        }catch(e){ console.error('Error handling Firestore snapshot', e); }
+      }, (err)=>{ console.error('Firestore snapshot error', err); });
+    }
     renderMain();
     tryInitAdmin();
     // If another tab updates storage, re-render to pick up changes instantly

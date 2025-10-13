@@ -28,8 +28,8 @@
     <main class="container">
       <section id="hero">
         <div id="img" style="text-align:center;margin-bottom:18px;">
-          <a href="img/velan.jpg"><img src="img/velan.jpg" alt="Photo" style="width:150px;border-radius:50%;"></a>
-          <p style="margin:8px 0;">Student at <b>Chennai Institute Of Technology</b></p>
+          <a id="profile-image-link" href="img/velan.jpg"><img id="profile-image" src="img/velan.jpg" alt="Photo" style="width:150px;border-radius:50%;"></a>
+          <p id="profile-image-caption" style="margin:8px 0;">Student at <b>Chennai Institute Of Technology</b></p>
         </div>
       </section>
 
@@ -123,6 +123,9 @@
     </footer>
 
     <script src="ui.js"></script>
+    <!-- Firebase (compat) SDKs for Firestore realtime updates -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
