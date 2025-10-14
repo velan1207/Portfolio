@@ -344,6 +344,24 @@ button, a.btn, input, textarea { transition: box-shadow .18s ease, transform .12
 	--accent-weak: rgba(255,255,255,0.03);
 }
 
+/* Make buttons more visible in dark theme (solid-ish surface and clearer borders) */
+.theme-dark .btn{
+	background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+	color: var(--text);
+	border: 1px solid rgba(255,255,255,0.06);
+}
+.theme-dark .btn.primary{
+	background: linear-gradient(90deg,var(--accent),var(--accent-600));
+	color: #071124; /* dark text on bright primary */
+	border-color: transparent;
+	box-shadow: 0 10px 28px rgba(59,130,246,0.08);
+}
+.theme-dark .btn.google{
+	background:#fff;
+	color:#202124;
+	border:1px solid #dadce0;
+}
+
 .theme-warm {
 	--bg: #f7fbf8;
 	--card: #fffdf9;

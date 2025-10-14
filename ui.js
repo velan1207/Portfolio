@@ -127,4 +127,6 @@
     s.value = current;
     s.addEventListener('change', ()=>{ applyTheme(s.value); saveTheme(s.value); });
   });
+  // expose theme helper to other scripts
+  window.UI = Object.assign(window.UI || {}, { addTilt, showToast, applyTheme, saveTheme, loadTheme });
 })();

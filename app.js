@@ -52,6 +52,8 @@
 
   // Google OAuth client id will be loaded from google-config.json served by the dev server.
   let GOOGLE_CLIENT_ID = null;
+  // Admin theme selector (admin page only)
+  const adminThemeSelect = document.querySelector('select#theme-select');
 
   // --- Firebase / Firestore realtime sync ---
   // NOTE: This uses the compat SDK loaded in admin.html/index.html. Ensure the SDK script tags are present.
@@ -210,6 +212,8 @@
   function renderMain(){
     if(!nameEl) return;
     const data = loadData();
+    // Apply default theme if present in data (admin-selected default)
+    try{ if(window.UI && typeof window.UI.applyTheme === 'function' && data && data.defaultTheme){ window.UI.applyTheme(data.defaultTheme); window.UI.saveTheme && window.UI.saveTheme(data.defaultTheme); } }catch(e){}
   nameEl.textContent = data.name;
   headlineEl.textContent = data.headline;
     // Last update date/time
@@ -438,6 +442,8 @@
     const data = loadData();
   nameInput.value = data.name;
   headlineInput.value = data.headline;
+  // reflect default theme in admin selector (if present)
+  try{ if(adminThemeSelect && data && data.defaultTheme) adminThemeSelect.value = data.defaultTheme; }catch(e){}
   // about is stored as HTML for rich text
   if(aboutInput) aboutInput.innerHTML = data.about || '';
     projectsEditor.innerHTML = '';
@@ -745,10 +751,13 @@
     const resume = (resumeLinkInput.value||'').trim();
     const contact = {email: (contactEmail.value||'').trim(), phone: (contactPhone.value||'').trim(), linkedin: (contactLinkedIn.value||'').trim()};
     const profile = { image: (profileImageUrlInput && profileImageUrlInput.value || '').trim(), caption: (profileImageCaptionInput && profileImageCaptionInput.value || '').trim() };
+    // defaultTheme: selected theme in the admin editor (if present)
+    const defaultTheme = (adminThemeSelect && adminThemeSelect.value) || '';
     return {
       name: nameInput.value.trim(),
       headline: headlineInput.value.trim(),
       about: (aboutInput && aboutInput.innerHTML) ? aboutInput.innerHTML.trim() : (aboutInput.value || '').trim(),
+      defaultTheme,
       projects,
       skills: {technical: tech, soft},
       internships, resume, contact,
@@ -788,7 +797,7 @@
     if(!firestore) throw new Error('Firestore not initialized');
     // meta doc: name, headline, about, profile, resume, contact, lastUpdate
     const meta = {
-      name: data.name||'', headline: data.headline||'', about: data.about||'', profile: data.profile||{}, resume: data.resume||'', contact: data.contact||{}, lastUpdate: Date.now()
+      name: data.name||'', headline: data.headline||'', about: data.about||'', profile: data.profile||{}, resume: data.resume||'', contact: data.contact||{}, lastUpdate: Date.now(), defaultTheme: data.defaultTheme || ''
     };
     const promises = [];
     if(metaDocRef) promises.push(metaDocRef.set(meta));
@@ -820,7 +829,7 @@
           const meta = snap.data();
           try{
             const current = loadData();
-            const merged = Object.assign({}, current, { name: meta.name, headline: meta.headline, about: meta.about, profile: meta.profile, resume: meta.resume, contact: meta.contact });
+            const merged = Object.assign({}, current, { name: meta.name, headline: meta.headline, about: meta.about, profile: meta.profile, resume: meta.resume, contact: meta.contact, defaultTheme: meta.defaultTheme || '' });
             saveData(merged);
             renderMain(); renderEditor();
           }catch(e){ console.error('Failed to apply meta snapshot', e); }
@@ -1292,7 +1301,7 @@
               if(metaSnap && metaSnap.exists){
                 const m = metaSnap.data();
                 const current = loadData();
-                const merged = Object.assign({}, current, { name: m.name, headline: m.headline, about: m.about, profile: m.profile, resume: m.resume, contact: m.contact });
+                const merged = Object.assign({}, current, { name: m.name, headline: m.headline, about: m.about, profile: m.profile, resume: m.resume, contact: m.contact, defaultTheme: m.defaultTheme || '' });
                 saveData(merged);
               }
             }catch(e){ /* ignore read error */ }
