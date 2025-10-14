@@ -1345,4 +1345,54 @@
   }catch(e){
     console.error(e);
   }
+  // Wire resume link to open downloaded PDF in a new tab after fetch completes.
+  try{
+    document.addEventListener('DOMContentLoaded', ()=>{
+      const resumeSection = document.getElementById('resume');
+      if(!resumeSection) return;
+      const link = resumeSection.querySelector('a');
+      if(!link) return;
+      // Enhance click: fetch the file and open in new tab (so browser shows the PDF) then also allow default download behavior
+      link.addEventListener('click', async (ev)=>{
+        try{
+          // Only intercept if href is present
+          const href = link.getAttribute('href');
+          if(!href) return;
+          // Prevent default to avoid immediate download
+          ev.preventDefault();
+          // Fetch the PDF as blob and open in new tab
+          const resp = await fetch(href);
+          if(!resp.ok) throw new Error('Failed to fetch resume');
+          const blob = await resp.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          // Open in new tab/window so user can view immediately
+          const win = window.open(blobUrl, '_blank');
+          if(!win) {
+            // Popup blocked, fallback to navigate to blob URL in same tab
+            window.location.href = blobUrl;
+          }
+          // Additionally create an invisible anchor to trigger a download with original filename
+          try{
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            // preserve original filename if present in href
+            const fn = href.split('/').pop() || 'resume.pdf';
+            a.download = fn;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+          }catch(err){}
+          // Revoke the blob URL after a short timeout to allow the viewer to load
+          setTimeout(()=> URL.revokeObjectURL(blobUrl), 60 * 1000);
+        }catch(err){
+          // On error, allow the default anchor behavior (download or open depending on browser)
+          console.warn('Resume open failed, falling back to default link behavior', err);
+          // Let the link follow-through
+          // For safety, use location.assign rather than link.click() to preserve href semantics
+          window.location.assign(link.href);
+        }
+      });
+    });
+  }catch(e){ console.warn('Resume opener wiring failed', e); }
 })();
