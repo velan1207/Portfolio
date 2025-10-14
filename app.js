@@ -212,6 +212,30 @@
     const data = loadData();
   nameEl.textContent = data.name;
   headlineEl.textContent = data.headline;
+    // Last update date/time
+    const lastUpdateEl = document.getElementById('last-update');
+    let lastUpdate = null;
+    // Prefer Firestore meta doc's lastUpdate if present, else localStorage key
+    if(data && typeof data.lastUpdate === 'number') lastUpdate = data.lastUpdate;
+    if(!lastUpdate){
+      try{
+        const lu = localStorage.getItem('portfolio:lastUpdate');
+        if(lu && !isNaN(Number(lu))) lastUpdate = Number(lu);
+      }catch(e){}
+    }
+    if(lastUpdateEl){
+      if(lastUpdate){
+        const d = new Date(lastUpdate);
+        // Format: Oct 14, 2025, 09:32 AM
+        const opts = { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' };
+        let formatted = d.toLocaleString('en-US', opts);
+        // Remove seconds, add AM/PM
+        formatted = formatted.replace(/:([0-9]{2})\s/, ' ');
+        lastUpdateEl.textContent = `Last updated: ${formatted}`;
+      }else{
+        lastUpdateEl.textContent = '';
+      }
+    }
   // profile image and caption
   const profileImgEl = document.getElementById('profile-image');
   const profileImgLink = document.getElementById('profile-image-link');
@@ -270,9 +294,12 @@
     skillsModal.setAttribute('aria-hidden','false');
   }
     // render projects as cards
+    // ensure container exists
+    if(!projectsListEl) projectsListEl = document.getElementById('projects-list') || document.querySelector('.projects-grid');
+    if(!projectsListEl) return;
     projectsListEl.innerHTML = '';
-    // Render as compact title-only cards. Clicking title opens a modal with full details.
-    const renderProjectCard = (title, desc, link) => {
+    // render card helper
+    const renderProjectCard = (title, desc, link, source) => {
       const card = document.createElement('div');
       card.className = 'project-card';
       const h3 = document.createElement('h3');
@@ -281,19 +308,20 @@
       a.textContent = title;
       a.addEventListener('click', (e)=>{
         e.preventDefault();
-        openProjectModal(title, desc, link);
+        openProjectModal(title, desc, link, source);
       });
       h3.appendChild(a);
+      // Note: live/visit button intentionally omitted from project listing; available in project modal only.
       card.appendChild(h3);
       projectsListEl.appendChild(card);
     };
     // Include portfolio as a project, but render internship separately
-  // support legacy single 'internship' object by normalizing to internships array
-  const internship = (data.internships && data.internships[0]) || data.internship || {};
+    // support legacy single 'internship' object by normalizing to internships array
+    const internship = (data.internships && data.internships[0]) || data.internship || {};
 
-    // Avoid duplicate internship entries: if an internship section exists, skip projects whose
-    // title mentions 'intern' to prevent duplicates.
-    const projectsToRender = (data.projects||[]).filter(p => {
+    // Use a safe projects array and avoid duplicate internship-like entries
+    const projectsArray = Array.isArray(data.projects) ? data.projects : (defaultData().projects || []);
+    const projectsToRender = projectsArray.filter(p => {
       if(!p || !p.title) return false;
       const title = (p.title||'').toLowerCase();
       if(internship && internship.text){
@@ -301,8 +329,8 @@
       }
       return true;
     });
-    projectsToRender.forEach(p => renderProjectCard(p.title, p.desc));
-    if(internship.portfolioText) renderProjectCard('Portfolio', internship.portfolioText);
+    projectsToRender.forEach(p => renderProjectCard(p.title, p.desc, p.link, p.source));
+    if(internship.portfolioText) renderProjectCard('Portfolio', internship.portfolioText, '', '');
 
     // Render internships section (supports multiple internships)
     const internshipSection = document.getElementById('internship');
@@ -367,7 +395,7 @@
   }
 
   // Project modal helpers
-  function openProjectModal(title, desc, link){
+  function openProjectModal(title, desc, link, source){
     const modal = document.getElementById('project-modal');
     const body = document.getElementById('project-modal-body');
     const titleEl = document.getElementById('project-modal-title');
@@ -375,10 +403,26 @@
     if(!modal) return;
     titleEl.textContent = title;
     body.innerHTML = desc || '';
+    // show Visit and/or Source buttons when links are provided
+    linkEl.innerHTML = '';
     if(link){
-      linkEl.innerHTML = `<a href="${link}" target="_blank">Open Project Link</a>`;
-    }else{
-      linkEl.innerHTML = '';
+      const visitBtn = document.createElement('a');
+      visitBtn.className = 'btn primary';
+      visitBtn.textContent = 'Visit';
+      visitBtn.href = link;
+      visitBtn.target = '_blank';
+      visitBtn.rel = 'noopener noreferrer';
+      linkEl.appendChild(visitBtn);
+    }
+    if(source){
+      const srcBtn = document.createElement('a');
+      srcBtn.className = 'btn';
+      srcBtn.textContent = 'Source';
+      srcBtn.href = source;
+      srcBtn.target = '_blank';
+      srcBtn.rel = 'noopener noreferrer';
+      srcBtn.style.marginLeft = '8px';
+      linkEl.appendChild(srcBtn);
     }
     modal.setAttribute('aria-hidden','false');
     // wire close
@@ -533,7 +577,12 @@
     const editor = document.createElement('div');
     editor.className = 'project-editor';
     editor.style.display = 'none';
-    const titleInput = document.createElement('input'); titleInput.value = wrap.dataset.title; titleInput.placeholder = 'Project title';
+  const titleInput = document.createElement('input'); titleInput.value = wrap.dataset.title; titleInput.placeholder = 'Project title';
+  const linkInput = document.createElement('input'); linkInput.value = project.link || '';
+  linkInput.placeholder = 'Optional live site URL (https://...)';
+  // source (git) link input
+  const sourceInput = document.createElement('input'); sourceInput.value = project.source || '';
+  sourceInput.placeholder = 'Optional source (Git) URL (https://github.com/...)';
     // toolbar
     const toolbar = document.createElement('div'); toolbar.className = 'editor-toolbar';
     ['bold','italic','insertUnorderedList','createLink','removeFormat'].forEach(cmd=>{
@@ -550,7 +599,11 @@
     const descEditor = document.createElement('div'); descEditor.className='rte'; descEditor.contentEditable = true; descEditor.innerHTML = wrap.dataset.desc || '';
     const saveBtn = document.createElement('button'); saveBtn.className='btn primary'; saveBtn.textContent = 'Save';
     const cancelBtn = document.createElement('button'); cancelBtn.className='btn'; cancelBtn.textContent = 'Cancel';
-    editor.appendChild(titleInput); editor.appendChild(toolbar); editor.appendChild(descEditor); editor.appendChild(saveBtn); editor.appendChild(cancelBtn);
+  editor.appendChild(titleInput);
+  // link input for optional live/demo site
+  editor.appendChild(linkInput);
+  editor.appendChild(sourceInput);
+  editor.appendChild(toolbar); editor.appendChild(descEditor); editor.appendChild(saveBtn); editor.appendChild(cancelBtn);
 
     // wire actions
     editBtn.addEventListener('click', ()=>{
@@ -565,10 +618,26 @@
     saveBtn.addEventListener('click', ()=>{
       const newTitle = titleInput.value.trim();
       const newDesc = descEditor.innerHTML.trim();
+      const newLink = (linkInput.value || '').trim();
+      const newSource = (sourceInput.value || '').trim();
       wrap.dataset.title = newTitle;
       wrap.dataset.desc = newDesc;
+      wrap.dataset.link = newLink;
+      wrap.dataset.source = newSource;
       titleEl.textContent = newTitle || 'Untitled Project';
+      // update preview HTML then optionally append live link badge
       preview.innerHTML = newDesc || '';
+      // remove existing live badge if present
+      // remove existing badges (Visit/Source) if present
+      preview.querySelectorAll('a').forEach(n=> n.remove());
+      if(newLink){
+        const liveBadge = document.createElement('a'); liveBadge.className = 'btn'; liveBadge.textContent = 'Visit'; liveBadge.href = newLink; liveBadge.target = '_blank'; liveBadge.style.marginLeft = '8px';
+        preview.appendChild(liveBadge);
+      }
+      if(newSource){
+        const srcBadge = document.createElement('a'); srcBadge.className = 'btn'; srcBadge.textContent = 'Source'; srcBadge.href = newSource; srcBadge.target = '_blank'; srcBadge.style.marginLeft = '8px';
+        preview.appendChild(srcBadge);
+      }
       editor.style.display = 'none'; display.style.display = '';
     });
     removeBtn.addEventListener('click', ()=> wrap.remove());
@@ -620,11 +689,15 @@
       if(editorOpen){
         const title = el.querySelector('.project-editor input')?.value || '';
         const desc = el.querySelector('.project-editor .rte')?.innerHTML || '';
-        if(title || desc) projects.push({title, desc});
+        const link = el.querySelector('.project-editor input[placeholder*="live"]')?.value || '';
+        const source = el.querySelector('.project-editor input[placeholder*="Git"]')?.value || '';
+        if(title || desc || link || source) projects.push({title, desc, link, source});
       }else{
         const title = el.dataset.title || '';
         const desc = el.dataset.desc || '';
-        if(title || desc) projects.push({title, desc});
+        const link = el.dataset.link || '';
+        const source = el.dataset.source || '';
+        if(title || desc || link || source) projects.push({title, desc, link, source});
       }
     });
     const skills = [];

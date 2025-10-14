@@ -63,10 +63,28 @@ main.container{height:auto;overflow:visible}
 .site-header p{margin:0;color:var(--muted);font-size:14px}
 .actions .btn{margin-left:12px}
 
-/* Buttons */
-.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid rgba(15,23,42,0.04);background:linear-gradient(180deg,#fff,#f8fbff);color:var(--accent);text-decoration:none;cursor:pointer;font-weight:700}
-.btn:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(2,6,23,0.06)}
-.btn.primary{background:linear-gradient(90deg,var(--accent),var(--accent-600));color:#fff;border-color:transparent;box-shadow:0 14px 36px rgba(11,116,255,0.14)}
+/* Buttons: neutral and primary variants with accessible contrast and subtle motion */
+.btn{
+	display:inline-flex;
+	align-items:center;
+	gap:10px;
+	padding:10px 16px;
+	border-radius:10px;
+	border:1px solid rgba(15,23,42,0.06);
+	background:transparent;
+	color:var(--accent-600);
+	text-decoration:none;
+	cursor:pointer;
+	font-weight:700;
+	min-height:40px;
+}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(2,6,23,0.06)}
+.btn.primary{
+	background:linear-gradient(90deg,var(--accent),var(--accent-600));
+	color:#fff;
+	border-color:transparent;
+	box-shadow:0 12px 32px rgba(11,116,255,0.12);
+}
 
 /* Main layout */
 main.container{display:grid;grid-template-columns:1fr;gap:18px;padding-bottom:40px}
@@ -93,7 +111,24 @@ section{background:var(--card);padding:14px;border-radius:var(--radius);box-shad
 
 #contact p{margin:6px 0}
 
-.site-footer{padding:18px 28px;color:var(--muted);font-size:13px;text-align:center}
+.site-footer{
+	padding:20px 28px;
+	color:var(--muted);
+	font-size:13px;
+	background:transparent;
+}
+.site-footer .credits{
+	max-width:1100px;
+	margin:0 auto;
+	display:flex;
+	align-items:center;
+	justify-content:space-between;
+	gap:12px;
+	flex-wrap:wrap;
+}
+.site-footer .credits .left{color:var(--muted)}
+.site-footer .credits a{color:var(--accent);text-decoration:none;font-weight:600}
+.site-footer .credits a:hover{text-decoration:underline}
 
 /* Modals should fit the viewport */
 .modal-content{max-height:calc(100vh - 160px);overflow:auto}
@@ -145,7 +180,9 @@ input,textarea{width:100%;padding:10px;margin:8px 0 14px;border:1px solid var(--
 
 @media (max-width:520px){
 	.site-header .container{flex-direction:column;align-items:flex-start}
+	/* Make secondary buttons full width on small screens, keep primary buttons visually prominent */
 	.btn{width:100%;justify-content:center}
+	.btn.primary{width:100%;}
 	.project-item{grid-template-columns:1fr;row-gap:8px}
 }
 
