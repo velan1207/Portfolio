@@ -1176,6 +1176,8 @@
     }
 
     saveBtn.addEventListener('click', () => {
+      // Prevent multi-clicks
+      try{ saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }catch(e){}
       const data = getEditorData();
       // If any internship text is provided, avoid saving projects that look like internship entries
       if(data.internships && data.internships.some(i => i.text && i.text.trim())){
@@ -1192,11 +1194,13 @@
             const user = firebaseAuth.currentUser;
             if(!user){
               alert('Please sign in with the admin account to save changes.');
+              saveBtn.disabled = false; saveBtn.textContent = 'Save';
               return;
             }
             const email = (user.email || '').toLowerCase();
             if(email !== (ADMIN_ALLOWED_EMAIL || '').toLowerCase()){
               alert('Signed-in account is not authorized to write. Use the configured admin account.');
+              saveBtn.disabled = false; saveBtn.textContent = 'Save';
               return;
             }
           }
@@ -1219,16 +1223,13 @@
           // also write a lightweight 'lastUpdate' key so other tabs/windows receive a storage event
           try{ localStorage.setItem('portfolio:lastUpdate', String(Date.now())); }catch(e){}
 
-          // If using Firebase Auth, sign out the admin user automatically after save
-          try{
-            if(firebaseAuth){
-              await firebaseAuth.signOut();
-            }
-          }catch(e){ console.warn('Auto sign-out failed', e); }
-
-          // redirect to the public page so user can see changes immediately
+          // Redirect immediately so admin sees the public page. Do not force sign-out here.
           window.location.href = 'index.html';
-        }catch(err){ console.error('Save flow error', err); alert('Save failed. See console for details.'); }
+        }catch(err){
+          console.error('Save flow error', err);
+          alert('Save failed. See console for details.');
+          try{ saveBtn.disabled = false; saveBtn.textContent = 'Save'; }catch(e){}
+        }
       })();
     });
 
