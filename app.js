@@ -117,69 +117,102 @@
     editorSection.classList.add('hidden');
   }
 
-  // Upload profile image file to Firebase Storage if a File was selected. Returns download URL or original value.
-  async function uploadProfileImageIfNeeded(data){
-    // If a file input contains a File, upload to storage and return its download URL. Otherwise return data.profile.image.
-    try{
-      const fileInput = profileImageFileInput;
-      if(!fileInput || !fileInput.files || fileInput.files.length === 0) return data.profile && data.profile.image || '';
-      const file = fileInput.files[0];
-      if(!file || !firebaseStorage) return data.profile && data.profile.image || '';
-      const ext = file.name.split('.').pop();
-      const path = `profile-images/${Date.now()}_${Math.random().toString(36).slice(2,9)}.${ext}`;
-      const ref = firebaseStorage.ref().child(path);
-      const snap = await ref.put(file);
-      const url = await snap.ref.getDownloadURL();
-      return url;
-    }catch(e){ console.error('Profile image upload failed', e); return data.profile && data.profile.image || ''; }
+  // Generate a short id (alphanumeric) of specified length
+  function generateShortId(len = 7){
+    const s = Math.random().toString(36).slice(2);
+    if(s.length >= len) return s.slice(0, len);
+    return (s + Math.random().toString(36).slice(2)).slice(0, len);
   }
 
-  // Upload a data URL (base64) to Firebase Storage and return the download URL.
-  async function uploadDataUrlToStorage(dataUrl, ext){
-    if(!firebaseStorage || !dataUrl) return null;
-    try{
-      // Convert data URL to blob (fetch works in modern browsers)
-      const resp = await fetch(dataUrl);
-      const blob = await resp.blob();
-      const extension = ext || (blob.type && blob.type.split('/').pop()) || 'png';
-      const path = `profile-images/${Date.now()}_${Math.random().toString(36).slice(2,9)}.${extension}`;
-      const ref = firebaseStorage.ref().child(path);
-      const snap = await ref.put(blob);
-      const url = await snap.ref.getDownloadURL();
-      return url;
-    }catch(e){
-      console.warn('uploadDataUrlToStorage failed', e);
-      return null;
-    }
-  }
-
-  // Compress a data URL (image) using a canvas. Returns a new data URL (jpeg) or original on failure.
-  async function compressDataUrl(dataUrl, maxWidth = 1024, quality = 0.7){
-    return new Promise((resolve)=>{
+  // Compress an image File to JPEG/WEBP via canvas and return a Blob.
+  function compressImageFile(file, maxWidth = 1200, quality = 0.8){
+    return new Promise((resolve, reject) => {
       try{
         const img = new Image();
-        img.onload = ()=>{
-          try{
-            let w = img.width, h = img.height;
-            if(w > maxWidth){
-              h = Math.round(h * (maxWidth / w));
-              w = maxWidth;
-            }
-            const canvas = document.createElement('canvas');
-            canvas.width = w; canvas.height = h;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, w, h);
-            const newDataUrl = canvas.toDataURL('image/jpeg', quality);
-            resolve(newDataUrl);
-          }catch(err){
-            console.warn('compressDataUrl draw failed', err); resolve(dataUrl);
-          }
+        const reader = new FileReader();
+        reader.onload = () => { img.src = reader.result; };
+        img.onerror = (e) => reject(e);
+        img.onload = () => {
+          const w = img.naturalWidth;
+          const h = img.naturalHeight;
+          let nw = w; let nh = h;
+          if(w > maxWidth){ nw = maxWidth; nh = Math.round(h * (maxWidth / w)); }
+          const canvas = document.createElement('canvas');
+          canvas.width = nw; canvas.height = nh;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, nw, nh);
+          // try webp first if available; fallback to jpeg
+          canvas.toBlob(blob => {
+            if(!blob) return reject(new Error('Canvas toBlob returned null'));
+            resolve(blob);
+          }, 'image/jpeg', quality);
         };
-        img.onerror = ()=> { resolve(dataUrl); };
-        // Ensure CORS-safe loading: data URLs are allowed
-        img.src = dataUrl;
-      }catch(e){ console.warn('compressDataUrl failed', e); resolve(dataUrl); }
+        reader.readAsDataURL(file);
+      }catch(err){ reject(err); }
     });
+  }
+
+  // Upload profile image file to Firebase Storage if a File was selected.
+  // Returns an object { url, shortId } on success, otherwise returns null.
+  async function uploadProfileImageIfNeeded(data){
+    try{
+      const fileInput = profileImageFileInput;
+      if(!fileInput || !fileInput.files || fileInput.files.length === 0) return null;
+      const file = fileInput.files[0];
+      if(!file || !firebaseStorage) return null;
+      // Generate short id and use as filename so we can display a short key in admin UI
+      const ext = (file.name || '').split('.').pop() || 'jpg';
+      const shortId = generateShortId(7);
+      const filename = `${shortId}.${ext}`;
+      const path = `profile-images/${filename}`;
+
+      // Attempt to compress before upload to reduce size and speed
+      let blobToUpload = file;
+      try{
+        const compressed = await compressImageFile(file, 1200, 0.75);
+        if(compressed && compressed.size > 0) blobToUpload = compressed;
+      }catch(e){ /* compression failed - proceed with original file */ }
+
+      const ref = firebaseStorage.ref().child(path);
+      // show progress UI when available
+      const progressWrap = document.getElementById('upload-progress');
+      const progressBar = document.getElementById('upload-progress-bar');
+      const progressText = document.getElementById('upload-progress-text');
+      try{
+        if(progressWrap) progressWrap.style.display = '';
+      }catch(e){}
+
+      const uploadTask = ref.put(blobToUpload);
+      // wait for completion and update UI on progress
+      const snap = await new Promise((resolve, reject) => {
+        uploadTask.on('state_changed', snapshot => {
+          try{
+            if(!snapshot) return;
+            const pct = snapshot.totalBytes ? Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100) : 0;
+            if(progressBar) progressBar.style.width = pct + '%';
+            if(progressText) progressText.textContent = pct + '%';
+          }catch(err){}
+        }, err => {
+          try{ if(progressWrap) progressWrap.style.display = 'none'; }catch(e){}
+          reject(err);
+        }, () => {
+          try{ resolve(uploadTask.snapshot); }catch(e){ reject(e); }
+        });
+      });
+
+      // fetch download URL
+      const url = await snap.ref.getDownloadURL();
+      // ensure UI shows 100% briefly then hide
+      try{
+        if(progressBar) progressBar.style.width = '100%';
+        if(progressText) progressText.textContent = '100%';
+        setTimeout(()=>{ try{ if(progressWrap) progressWrap.style.display = 'none'; if(progressBar) progressBar.style.width = '0%'; if(progressText) progressText.textContent = '0%'; }catch(e){} }, 600);
+      }catch(e){}
+
+      // update meta immediately so other clients see shortId mapping
+      try{ if(metaDocRef) metaDocRef.set({ profile: { image: url, shortId }, lastUpdate: Date.now() }, { merge: true }); }catch(e){}
+      return { url, shortId };
+    }catch(e){ console.error('Profile image upload failed', e); return null; }
   }
 
   function defaultData(){
@@ -553,7 +586,7 @@
       })();
     }
   // profile fields
-  if(profileImageUrlInput) profileImageUrlInput.value = (data.profile && data.profile.image) || '';
+  if(profileImageUrlInput) profileImageUrlInput.value = (data.profile && (data.profile.shortId || data.profile.image)) || '';
   if(profileImageCaptionInput) profileImageCaptionInput.value = (data.profile && data.profile.caption) || '';
   if(profileImagePreview){ profileImagePreview.src = (data.profile && data.profile.image) || 'img/velan.jpg'; }
   }
@@ -567,6 +600,7 @@
       reader.onload = ()=>{
         const dataUrl = reader.result;
         if(profileImagePreview) profileImagePreview.src = dataUrl;
+        // Optimistically show a preview; the admin-facing 'image url' field will be replaced by a short key after upload
         if(profileImageUrlInput) profileImageUrlInput.value = dataUrl;
         // After previewing, attempt to upload and persist the image immediately
         (async ()=>{
@@ -574,21 +608,22 @@
             // Prefer Firebase Storage upload when available & admin signed-in
             if(firebaseStorage && firebaseAuth && firebaseAuth.currentUser && typeof firebaseAuth.currentUser.email === 'string' && firebaseAuth.currentUser.email.toLowerCase() === (ADMIN_ALLOWED_EMAIL||'').toLowerCase()){
               // create a storage ref and upload
-              const ext = (f.name || '').split('.').pop() || 'png';
-              const path = `profile-images/${Date.now()}_${Math.random().toString(36).slice(2,9)}.${ext}`;
               try{
-                const ref = firebaseStorage.ref().child(path);
-                const snap = await ref.put(f);
-                const url = await snap.ref.getDownloadURL();
-                // update local data and meta (merge)
-                try{
-                  const current = loadData();
-                  current.profile = current.profile || {};
-                  current.profile.image = url;
-                  saveData(current);
-                  if(window.UI && window.UI.showToast) window.UI.showToast('Profile image uploaded');
-                }catch(e){}
-                try{ if(metaDocRef) metaDocRef.set({ profile: { image: url }, lastUpdate: Date.now() }, { merge: true }); }catch(e){}
+                const res = await uploadProfileImageIfNeeded(loadData());
+                if(res && res.url){
+                  const { url, shortId } = res;
+                  // update local data and show shortId in the admin field
+                  try{
+                    const current = loadData();
+                    current.profile = current.profile || {};
+                    current.profile.image = url;
+                    current.profile.shortId = shortId;
+                    saveData(current);
+                    if(profileImageUrlInput) profileImageUrlInput.value = shortId;
+                    if(profileImagePreview) profileImagePreview.src = url;
+                    if(window.UI && window.UI.showToast) window.UI.showToast('Profile image uploaded');
+                  }catch(e){}
+                }
                 return;
               }catch(err){
                 console.warn('Firebase upload failed, falling back to local data URL', err);
@@ -1253,55 +1288,19 @@
             }
           }
 
-          // Handle profile image before writing meta:
+          // If a profile file is selected and Storage is available, upload and replace profile.image
           try{
-            // 1) If a file input is selected, upload it (existing behavior)
             if(firebaseStorage){
-              const uploadedUrl = await uploadProfileImageIfNeeded(data);
-              if(uploadedUrl){ data.profile = data.profile || {}; data.profile.image = uploadedUrl; }
-            }
-
-            // 2) If profile.image is still a data URL (base64) we should either upload it to Storage
-            //    or compress it. Writing raw large base64 strings into Firestore will fail or hang.
-            const imgVal = data.profile && data.profile.image;
-            if(imgVal && typeof imgVal === 'string' && imgVal.indexOf('data:') === 0){
-              // If storage available, upload the data URL as a blob
-              if(firebaseStorage){
-                try{
-                  // attempt to infer extension from data URL
-                  const m = imgVal.match(/^data:image\/(png|jpeg|jpg|webp|gif)/i);
-                  const ext = m ? (m[1].toLowerCase().replace('jpeg','jpg')) : 'png';
-                  const uploaded = await uploadDataUrlToStorage(imgVal, ext);
-                  if(uploaded){ data.profile.image = uploaded; }
-                }catch(e){ console.warn('uploadDataUrlToStorage failed', e); }
-              }else{
-                // No storage: compress only if the data URL is large; otherwise keep it
-                try{
-                  const MAX_LOCAL_SAVE = 200 * 1024; // 200 KB
-                  if(imgVal.length > MAX_LOCAL_SAVE){
-                    const compressed = await compressDataUrl(imgVal, 1024, 0.7);
-                    data.profile.image = compressed;
-                  }
-                }catch(e){ console.warn('compressDataUrl failed', e); }
+              const res = await uploadProfileImageIfNeeded(data);
+              if(res && res.url){
+                data.profile = data.profile || {};
+                data.profile.image = res.url;
+                data.profile.shortId = res.shortId;
+                // show short id in admin input so admin sees a compact identifier
+                try{ if(profileImageUrlInput) profileImageUrlInput.value = res.shortId; }catch(e){}
               }
-
-              // If after attempts the data URL is still excessively large, remove it from meta to avoid Firestore issues
-              try{
-                const finalVal = data.profile && data.profile.image;
-                const TOO_LARGE = 800 * 1024; // 800 KB safe threshold for document payload
-                if(finalVal && finalVal.length && finalVal.length > TOO_LARGE){
-                  // keep local copy only and instruct user to sign-in to upload
-                  const currentLocal = loadData();
-                  currentLocal.profile = currentLocal.profile || {};
-                  currentLocal.profile.image = finalVal; // keep locally
-                  saveData(currentLocal);
-                  // remove from data that will be written to Firestore/meta
-                  data.profile.image = '';
-                  alert('Profile image is too large to save to cloud. Sign in to upload or choose a smaller image.');
-                }
-              }catch(e){ console.warn('Final profile image size check failed', e); }
             }
-          }catch(e){ console.warn('Profile upload/processing failed, continuing with existing image', e); }
+          }catch(e){ console.warn('Profile upload failed, continuing with existing image', e); }
 
           // write to Firestore (collections-based) if available
           try{
@@ -1313,7 +1312,13 @@
           // also write a lightweight 'lastUpdate' key so other tabs/windows receive a storage event
           try{ localStorage.setItem('portfolio:lastUpdate', String(Date.now())); }catch(e){}
 
-          // Redirect immediately so admin sees the public page. Do not force sign-out here.
+          // Sign out the admin automatically (clear session) then redirect to public site
+          try{
+            if(firebaseAuth && typeof firebaseAuth.signOut === 'function'){
+              await firebaseAuth.signOut();
+            }
+          }catch(err){ console.warn('Sign-out after save failed', err); }
+          // Redirect to public page
           window.location.href = 'index.html';
         }catch(err){
           console.error('Save flow error', err);
