@@ -135,9 +135,21 @@
       const ref = firebaseStorage.ref().child(path);
       const snap = await ref.put(file);
       const downloadURL = await snap.ref.getDownloadURL();
-      // shortened URL: remove query params (e.g., token) by splitting at '?'
-      const shortenedURL = (typeof downloadURL === 'string' && downloadURL.indexOf('?') !== -1) ? downloadURL.split('?')[0] : downloadURL;
-      return { storagePath: path, downloadURL, shortenedURL };
+      // Build a shortened candidate by removing query params and adding ?alt=media
+      const shortenedCandidate = (typeof downloadURL === 'string' && downloadURL.indexOf('?') !== -1) ? (downloadURL.split('?')[0] + '?alt=media') : downloadURL;
+
+      // Try to verify the shortened URL is reachable (some storage rules may block token-less URLs).
+      // We'll attempt a fetch with a timeout (12 seconds) and if it returns ok, prefer the shortened URL.
+      let finalUrl = downloadURL; // default
+      try{
+        const controller = new AbortController();
+        const timeoutId = setTimeout(()=> controller.abort(), 12000);
+        const resp = await fetch(shortenedCandidate, { method: 'GET', signal: controller.signal });
+        clearTimeout(timeoutId);
+        if(resp && resp.ok){ finalUrl = shortenedCandidate; }
+      }catch(e){ /* verification failed or timed out — keep tokenized URL */ }
+
+      return { storagePath: path, downloadURL, shortenedURL: shortenedCandidate, finalUrl };
     }catch(e){ console.error('Profile image upload failed', e); return null; }
   }
 
@@ -581,8 +593,8 @@
                 lastProfileUploadResult = Object.assign(lastProfileUploadResult||{}, res);
                 // update preview to the downloadURL
                 if(res.downloadURL && profileImagePreview) profileImagePreview.src = res.downloadURL;
-                // ensure input contains the canonical storage path (not a guessed public URL)
-                if(profileImageUrlInput) profileImageUrlInput.value = res.storagePath || lastProfileUploadResult.storagePath || '';
+                // ensure input contains the validated public URL (preferred) or canonical storage path
+                if(profileImageUrlInput) profileImageUrlInput.value = res.finalUrl || res.shortenedURL || res.storagePath || lastProfileUploadResult.storagePath || '';
                 return res;
               }
               return null;
