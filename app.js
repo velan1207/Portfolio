@@ -520,6 +520,42 @@
         const dataUrl = reader.result;
         if(profileImagePreview) profileImagePreview.src = dataUrl;
         if(profileImageUrlInput) profileImageUrlInput.value = dataUrl;
+        // After previewing, attempt to upload and persist the image immediately
+        (async ()=>{
+          try{
+            // Prefer Firebase Storage upload when available & admin signed-in
+            if(firebaseStorage && firebaseAuth && firebaseAuth.currentUser && typeof firebaseAuth.currentUser.email === 'string' && firebaseAuth.currentUser.email.toLowerCase() === (ADMIN_ALLOWED_EMAIL||'').toLowerCase()){
+              // create a storage ref and upload
+              const ext = (f.name || '').split('.').pop() || 'png';
+              const path = `profile-images/${Date.now()}_${Math.random().toString(36).slice(2,9)}.${ext}`;
+              try{
+                const ref = firebaseStorage.ref().child(path);
+                const snap = await ref.put(f);
+                const url = await snap.ref.getDownloadURL();
+                // update local data and meta (merge)
+                try{
+                  const current = loadData();
+                  current.profile = current.profile || {};
+                  current.profile.image = url;
+                  saveData(current);
+                  if(window.UI && window.UI.showToast) window.UI.showToast('Profile image uploaded');
+                }catch(e){}
+                try{ if(metaDocRef) metaDocRef.set({ profile: { image: url }, lastUpdate: Date.now() }, { merge: true }); }catch(e){}
+                return;
+              }catch(err){
+                console.warn('Firebase upload failed, falling back to local data URL', err);
+              }
+            }
+            // Fallback: store data URL locally so preview persists
+            try{
+              const current = loadData();
+              current.profile = current.profile || {};
+              current.profile.image = dataUrl;
+              saveData(current);
+              if(window.UI && window.UI.showToast) window.UI.showToast('Profile image saved locally. Sign in to upload to cloud.');
+            }catch(e){}
+          }catch(e){ console.warn('Profile auto-save failed', e); }
+        })();
       };
       reader.readAsDataURL(f);
     });
