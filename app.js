@@ -134,6 +134,54 @@
     }catch(e){ console.error('Profile image upload failed', e); return data.profile && data.profile.image || ''; }
   }
 
+  // Upload a data URL (base64) to Firebase Storage and return the download URL.
+  async function uploadDataUrlToStorage(dataUrl, ext){
+    if(!firebaseStorage || !dataUrl) return null;
+    try{
+      // Convert data URL to blob (fetch works in modern browsers)
+      const resp = await fetch(dataUrl);
+      const blob = await resp.blob();
+      const extension = ext || (blob.type && blob.type.split('/').pop()) || 'png';
+      const path = `profile-images/${Date.now()}_${Math.random().toString(36).slice(2,9)}.${extension}`;
+      const ref = firebaseStorage.ref().child(path);
+      const snap = await ref.put(blob);
+      const url = await snap.ref.getDownloadURL();
+      return url;
+    }catch(e){
+      console.warn('uploadDataUrlToStorage failed', e);
+      return null;
+    }
+  }
+
+  // Compress a data URL (image) using a canvas. Returns a new data URL (jpeg) or original on failure.
+  async function compressDataUrl(dataUrl, maxWidth = 1024, quality = 0.7){
+    return new Promise((resolve)=>{
+      try{
+        const img = new Image();
+        img.onload = ()=>{
+          try{
+            let w = img.width, h = img.height;
+            if(w > maxWidth){
+              h = Math.round(h * (maxWidth / w));
+              w = maxWidth;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            const newDataUrl = canvas.toDataURL('image/jpeg', quality);
+            resolve(newDataUrl);
+          }catch(err){
+            console.warn('compressDataUrl draw failed', err); resolve(dataUrl);
+          }
+        };
+        img.onerror = ()=> { resolve(dataUrl); };
+        // Ensure CORS-safe loading: data URLs are allowed
+        img.src = dataUrl;
+      }catch(e){ console.warn('compressDataUrl failed', e); resolve(dataUrl); }
+    });
+  }
+
   function defaultData(){
     return {
       name: 'Velan M',
@@ -1205,13 +1253,55 @@
             }
           }
 
-          // If a profile file is selected and Storage is available, upload and replace profile.image
+          // Handle profile image before writing meta:
           try{
+            // 1) If a file input is selected, upload it (existing behavior)
             if(firebaseStorage){
               const uploadedUrl = await uploadProfileImageIfNeeded(data);
               if(uploadedUrl){ data.profile = data.profile || {}; data.profile.image = uploadedUrl; }
             }
-          }catch(e){ console.warn('Profile upload failed, continuing with existing image', e); }
+
+            // 2) If profile.image is still a data URL (base64) we should either upload it to Storage
+            //    or compress it. Writing raw large base64 strings into Firestore will fail or hang.
+            const imgVal = data.profile && data.profile.image;
+            if(imgVal && typeof imgVal === 'string' && imgVal.indexOf('data:') === 0){
+              // If storage available, upload the data URL as a blob
+              if(firebaseStorage){
+                try{
+                  // attempt to infer extension from data URL
+                  const m = imgVal.match(/^data:image\/(png|jpeg|jpg|webp|gif)/i);
+                  const ext = m ? (m[1].toLowerCase().replace('jpeg','jpg')) : 'png';
+                  const uploaded = await uploadDataUrlToStorage(imgVal, ext);
+                  if(uploaded){ data.profile.image = uploaded; }
+                }catch(e){ console.warn('uploadDataUrlToStorage failed', e); }
+              }else{
+                // No storage: compress only if the data URL is large; otherwise keep it
+                try{
+                  const MAX_LOCAL_SAVE = 200 * 1024; // 200 KB
+                  if(imgVal.length > MAX_LOCAL_SAVE){
+                    const compressed = await compressDataUrl(imgVal, 1024, 0.7);
+                    data.profile.image = compressed;
+                  }
+                }catch(e){ console.warn('compressDataUrl failed', e); }
+              }
+
+              // If after attempts the data URL is still excessively large, remove it from meta to avoid Firestore issues
+              try{
+                const finalVal = data.profile && data.profile.image;
+                const TOO_LARGE = 800 * 1024; // 800 KB safe threshold for document payload
+                if(finalVal && finalVal.length && finalVal.length > TOO_LARGE){
+                  // keep local copy only and instruct user to sign-in to upload
+                  const currentLocal = loadData();
+                  currentLocal.profile = currentLocal.profile || {};
+                  currentLocal.profile.image = finalVal; // keep locally
+                  saveData(currentLocal);
+                  // remove from data that will be written to Firestore/meta
+                  data.profile.image = '';
+                  alert('Profile image is too large to save to cloud. Sign in to upload or choose a smaller image.');
+                }
+              }catch(e){ console.warn('Final profile image size check failed', e); }
+            }
+          }catch(e){ console.warn('Profile upload/processing failed, continuing with existing image', e); }
 
           // write to Firestore (collections-based) if available
           try{
