@@ -1148,34 +1148,37 @@
       // write locally first
       saveData(data);
 
-      // async save flow: require auth (if available), upload profile image, then write collections
+      // async save flow: try to upload+push to remote only when admin is authenticated.
       (async ()=>{
         try{
-          // If firebaseAuth exists, ensure an allowed admin is signed in
+          // Determine whether we should attempt remote operations (upload + Firestore write).
+          let allowRemote = false;
           if(firebaseAuth){
             const user = firebaseAuth.currentUser;
             if(!user){
-              alert('Please sign in with the admin account to save changes.');
-              return;
-            }
-            const email = (user.email || '').toLowerCase();
-            if(email !== (ADMIN_ALLOWED_EMAIL || '').toLowerCase()){
-              alert('Signed-in account is not authorized to write. Use the configured admin account.');
-              return;
+              // Not signed in to Firebase: keep local save and inform the admin that remote sync won't occur.
+              alert('Saved locally. To push changes (uploads and Firestore writes), please sign in with the admin account.');
+            }else{
+              const email = (user.email || '').toLowerCase();
+              if(email !== (ADMIN_ALLOWED_EMAIL || '').toLowerCase()){
+                alert('Signed-in account is not authorized to write. Changes saved locally only.');
+              }else{
+                allowRemote = true;
+              }
             }
           }
 
-          // If a profile file is selected and Storage is available, upload and replace profile.image
+          // If a profile file is selected and Storage is available, upload and replace profile.image (only when allowed)
           try{
-            if(firebaseStorage){
+            if(allowRemote && firebaseStorage){
               const uploadedUrl = await uploadProfileImageIfNeeded(data);
               if(uploadedUrl){ data.profile = data.profile || {}; data.profile.image = uploadedUrl; }
             }
           }catch(e){ console.warn('Profile upload failed, continuing with existing image', e); }
 
-          // write to Firestore (collections-based) if available
+          // write to Firestore (collections-based) if available and allowed
           try{
-            if(firestore && metaDocRef){
+            if(allowRemote && firestore && metaDocRef){
               await writePortfolioCollections(data);
             }
           }catch(err){ console.error('Failed to write collections to Firestore', err); }
@@ -1183,9 +1186,9 @@
           // also write a lightweight 'lastUpdate' key so other tabs/windows receive a storage event
           try{ localStorage.setItem('portfolio:lastUpdate', String(Date.now())); }catch(e){}
 
-          // If using Firebase Auth, sign out the admin user automatically after save
+          // If we pushed to remote and Firebase Auth is available, sign out the admin user automatically after save
           try{
-            if(firebaseAuth){
+            if(allowRemote && firebaseAuth){
               await firebaseAuth.signOut();
             }
           }catch(e){ console.warn('Auto sign-out failed', e); }
