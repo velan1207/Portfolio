@@ -211,6 +211,8 @@
 
       // update meta immediately so other clients see shortId mapping
       try{ if(metaDocRef) metaDocRef.set({ profile: { image: url, shortId }, lastUpdate: Date.now() }, { merge: true }); }catch(e){}
+      // write a short_links mapping so shortId can be resolved to the download URL
+      try{ if(firestore){ firestore.collection('short_links').doc(shortId).set({ url, created: Date.now() }, { merge: true }).catch(()=>{}); } }catch(e){}
       return { url, shortId };
     }catch(e){ console.error('Profile image upload failed', e); return null; }
   }
@@ -586,7 +588,13 @@
       })();
     }
   // profile fields
-  if(profileImageUrlInput) profileImageUrlInput.value = (data.profile && (data.profile.shortId || data.profile.image)) || '';
+  if(profileImageUrlInput) {
+    if(data.profile && data.profile.shortId){
+      try{ profileImageUrlInput.value = `${location.origin}/p.html?id=${encodeURIComponent(data.profile.shortId)}`; }catch(e){ profileImageUrlInput.value = data.profile.shortId || data.profile.image || ''; }
+    }else{
+      profileImageUrlInput.value = (data.profile && data.profile.image) || '';
+    }
+  }
   if(profileImageCaptionInput) profileImageCaptionInput.value = (data.profile && data.profile.caption) || '';
   if(profileImagePreview){ profileImagePreview.src = (data.profile && data.profile.image) || 'img/velan.jpg'; }
   }
@@ -612,14 +620,14 @@
                 const res = await uploadProfileImageIfNeeded(loadData());
                 if(res && res.url){
                   const { url, shortId } = res;
-                  // update local data and show shortId in the admin field
+                  // update local data and show short URL in the admin field
                   try{
                     const current = loadData();
                     current.profile = current.profile || {};
                     current.profile.image = url;
                     current.profile.shortId = shortId;
                     saveData(current);
-                    if(profileImageUrlInput) profileImageUrlInput.value = shortId;
+                    if(profileImageUrlInput) profileImageUrlInput.value = `${location.origin}/p.html?id=${encodeURIComponent(shortId)}`;
                     if(profileImagePreview) profileImagePreview.src = url;
                     if(window.UI && window.UI.showToast) window.UI.showToast('Profile image uploaded');
                   }catch(e){}
@@ -1292,12 +1300,12 @@
           try{
             if(firebaseStorage){
               const res = await uploadProfileImageIfNeeded(data);
-              if(res && res.url){
+                if(res && res.url){
                 data.profile = data.profile || {};
                 data.profile.image = res.url;
                 data.profile.shortId = res.shortId;
-                // show short id in admin input so admin sees a compact identifier
-                try{ if(profileImageUrlInput) profileImageUrlInput.value = res.shortId; }catch(e){}
+                // show short URL in admin input so admin sees a compact link
+                try{ if(profileImageUrlInput) profileImageUrlInput.value = `${location.origin}/p.html?id=${encodeURIComponent(res.shortId)}`; }catch(e){}
               }
             }
           }catch(e){ console.warn('Profile upload failed, continuing with existing image', e); }
