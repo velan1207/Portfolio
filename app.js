@@ -569,23 +569,20 @@
           // generate deterministic storage path now so we can construct a shortened URL synchronously
           const ext = f.name.split('.').pop();
           const generatedPath = `profile-images/${Date.now()}_${Math.random().toString(36).slice(2,9)}.${ext}`;
-          // construct a shortened URL (remove token/query) immediately for display. Include ?alt=media (no token)
-          const shortenedCandidate = `https://firebasestorage.googleapis.com/v0/b/${FIREBASE_CONFIG.storageBucket}/o/${encodeURIComponent(generatedPath)}?alt=media`;
-          // set input instantly with shortened URL (0ms perceived delay)
-          if(profileImageUrlInput) profileImageUrlInput.value = shortenedCandidate;
+          // set the short storage path immediately (canonical) so the input updates at 0ms
+          if(profileImageUrlInput) profileImageUrlInput.value = generatedPath;
           // record pending upload and lastProfileUploadResult partial data
-          lastProfileUploadResult = { storagePath: generatedPath, shortenedURL: shortenedCandidate };
+          lastProfileUploadResult = { storagePath: generatedPath };
           pendingProfileUploadPromise = (async () => {
             try{
               const res = await uploadProfileImageIfNeeded({profile:{}}, generatedPath);
               if(res){
-                // prefer actual shortenedURL from server response if available
+                // prefer actual storagePath from server response
                 lastProfileUploadResult = Object.assign(lastProfileUploadResult||{}, res);
                 // update preview to the downloadURL
                 if(res.downloadURL && profileImagePreview) profileImagePreview.src = res.downloadURL;
-                // ensure input contains the shortened URL (strip token query and include ?alt=media)
-                const s = res.shortenedURL || (typeof res.downloadURL === 'string' ? (res.downloadURL.split('?')[0] + '?alt=media') : (res.downloadURL || ''));
-                if(profileImageUrlInput) profileImageUrlInput.value = s || lastProfileUploadResult.shortenedURL || '';
+                // ensure input contains the canonical storage path (not a guessed public URL)
+                if(profileImageUrlInput) profileImageUrlInput.value = res.storagePath || lastProfileUploadResult.storagePath || '';
                 return res;
               }
               return null;
