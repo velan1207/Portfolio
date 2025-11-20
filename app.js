@@ -105,10 +105,6 @@
     }
   }catch(e){ /* ignore */ }
 
-  // Track pending profile image upload so Save can await it
-  let pendingProfileUploadPromise = null;
-  let lastProfileUploadResult = null; // { storagePath, downloadURL, shortenedURL }
-
   // UI elements used for auth
   const firebaseSignInContainer = document.getElementById('g_id_signin');
 
@@ -121,36 +117,21 @@
     editorSection.classList.add('hidden');
   }
 
-  // Upload profile image file to Firebase Storage if a File was selected.
-  // Returns an object { storagePath, downloadURL } when upload occurs, otherwise returns null.
-  // We store the shorter `storagePath` in Firestore (e.g. 'profile-images/..') and resolve to a download URL at render time.
-  async function uploadProfileImageIfNeeded(data, destPath){
+  // Upload profile image file to Firebase Storage if a File was selected. Returns download URL or original value.
+  async function uploadProfileImageIfNeeded(data){
+    // If a file input contains a File, upload to storage and return its download URL. Otherwise return data.profile.image.
     try{
       const fileInput = profileImageFileInput;
-      if(!fileInput || !fileInput.files || fileInput.files.length === 0) return null;
+      if(!fileInput || !fileInput.files || fileInput.files.length === 0) return data.profile && data.profile.image || '';
       const file = fileInput.files[0];
-      if(!file || !firebaseStorage) return null;
+      if(!file || !firebaseStorage) return data.profile && data.profile.image || '';
       const ext = file.name.split('.').pop();
-      const path = destPath || `profile-images/${Date.now()}_${Math.random().toString(36).slice(2,9)}.${ext}`;
+      const path = `profile-images/${Date.now()}_${Math.random().toString(36).slice(2,9)}.${ext}`;
       const ref = firebaseStorage.ref().child(path);
       const snap = await ref.put(file);
-      const downloadURL = await snap.ref.getDownloadURL();
-      // Build a shortened candidate by removing query params and adding ?alt=media
-      const shortenedCandidate = (typeof downloadURL === 'string' && downloadURL.indexOf('?') !== -1) ? (downloadURL.split('?')[0] + '?alt=media') : downloadURL;
-
-      // Try to verify the shortened URL is reachable (some storage rules may block token-less URLs).
-      // We'll attempt a fetch with a timeout (12 seconds) and if it returns ok, prefer the shortened URL.
-      let finalUrl = downloadURL; // default
-      try{
-        const controller = new AbortController();
-        const timeoutId = setTimeout(()=> controller.abort(), 12000);
-        const resp = await fetch(shortenedCandidate, { method: 'GET', signal: controller.signal });
-        clearTimeout(timeoutId);
-        if(resp && resp.ok){ finalUrl = shortenedCandidate; }
-      }catch(e){ /* verification failed or timed out — keep tokenized URL */ }
-
-      return { storagePath: path, downloadURL, shortenedURL: shortenedCandidate, finalUrl };
-    }catch(e){ console.error('Profile image upload failed', e); return null; }
+      const url = await snap.ref.getDownloadURL();
+      return url;
+    }catch(e){ console.error('Profile image upload failed', e); return data.profile && data.profile.image || ''; }
   }
 
   function defaultData(){
@@ -263,27 +244,7 @@
   const profileImgEl = document.getElementById('profile-image');
   const profileImgLink = document.getElementById('profile-image-link');
   const profileCaptionEl = document.getElementById('profile-image-caption');
-  if(profileImgEl && data.profile && data.profile.image){
-    const imgVal = data.profile.image;
-    // If imgVal is already a full URL, use it. Otherwise treat it as a storage path and resolve via Firebase Storage.
-    if(typeof imgVal === 'string' && imgVal.indexOf('http') === 0){
-      profileImgEl.src = imgVal;
-      if(profileImgLink) profileImgLink.href = imgVal;
-    }else if(firebaseStorage){
-      // resolve storage path to download URL asynchronously
-      try{
-        const ref = firebaseStorage.ref().child(imgVal);
-        ref.getDownloadURL().then(url => {
-          try{ profileImgEl.src = url; if(profileImgLink) profileImgLink.href = url; }catch(e){}
-        }).catch(err => {
-          console.warn('Failed to resolve storage path for profile image', err);
-          // fallback: leave src as-is or use placeholder
-        });
-      }catch(e){ console.warn('Failed to resolve profile image storage path', e); }
-    }else{
-      // No firebaseStorage available; if imgVal isn't a URL we can't resolve it — leave placeholder
-    }
-  }
+  if(profileImgEl && data.profile && data.profile.image){ profileImgEl.src = data.profile.image; if(profileImgLink) profileImgLink.href = data.profile.image; }
   if(profileCaptionEl && data.profile && data.profile.caption) profileCaptionEl.innerHTML = data.profile.caption;
   if(aboutEl) aboutEl.innerHTML = data.about || '';
     // Skills: technical and soft
@@ -546,78 +507,21 @@
   // profile fields
   if(profileImageUrlInput) profileImageUrlInput.value = (data.profile && data.profile.image) || '';
   if(profileImageCaptionInput) profileImageCaptionInput.value = (data.profile && data.profile.caption) || '';
-  if(profileImagePreview){
-    const imgVal = (data.profile && data.profile.image) || '';
-    if(imgVal && typeof imgVal === 'string' && imgVal.indexOf('http') === 0){
-      profileImagePreview.src = imgVal;
-    }else if(imgVal && firebaseStorage){
-      try{
-        firebaseStorage.ref().child(imgVal).getDownloadURL().then(url => { try{ profileImagePreview.src = url; }catch(e){} }).catch(()=>{});
-      }catch(e){}
-    }else{
-      profileImagePreview.src = imgVal || 'img/velan.jpg';
-    }
-  }
+  if(profileImagePreview){ profileImagePreview.src = (data.profile && data.profile.image) || 'img/velan.jpg'; }
   }
 
   // wire profile image file input preview -> convert to data URL
   if(profileImageFileInput){
-    profileImageFileInput.addEventListener('change', async (e)=>{
+    profileImageFileInput.addEventListener('change', (e)=>{
       const f = e.target.files && e.target.files[0];
       if(!f) return;
-      // immediate preview using data URL
-      try{
-        const reader = new FileReader();
-        reader.onload = ()=>{ if(profileImagePreview) profileImagePreview.src = reader.result; };
-        reader.readAsDataURL(f);
-      }catch(err){ /* ignore preview failure */ }
-
-      // If Firebase Storage is available, start upload and set a shortened URL immediately (0ms)
-      if(firebaseStorage){
-        try{
-          if(saveBtn) saveBtn.disabled = true;
-          window.UI && window.UI.showToast && window.UI.showToast('Uploading profile image...', 4000);
-
-          // generate deterministic storage path now so we can construct a shortened URL synchronously
-          const ext = f.name.split('.').pop();
-          const generatedPath = `profile-images/${Date.now()}_${Math.random().toString(36).slice(2,9)}.${ext}`;
-          // set the short storage path immediately (canonical) so the input updates at 0ms
-          if(profileImageUrlInput) profileImageUrlInput.value = generatedPath;
-          // record pending upload and lastProfileUploadResult partial data
-          lastProfileUploadResult = { storagePath: generatedPath };
-          pendingProfileUploadPromise = (async () => {
-            try{
-              const res = await uploadProfileImageIfNeeded({profile:{}}, generatedPath);
-              if(res){
-                // prefer actual storagePath from server response
-                lastProfileUploadResult = Object.assign(lastProfileUploadResult||{}, res);
-                // update preview to the downloadURL
-                if(res.downloadURL && profileImagePreview) profileImagePreview.src = res.downloadURL;
-                // ensure input contains the validated public URL (preferred) or canonical storage path
-                if(profileImageUrlInput) profileImageUrlInput.value = res.finalUrl || res.shortenedURL || res.storagePath || lastProfileUploadResult.storagePath || '';
-                return res;
-              }
-              return null;
-            }catch(err){ console.error('Immediate profile upload failed', err); return null; } finally { if(saveBtn) saveBtn.disabled = false; }
-          })();
-
-          // Await the pending upload but do not block UI; Save will await this promise if needed
-          pendingProfileUploadPromise.catch(()=>{});
-        }catch(err){
-          console.error('Immediate profile image upload failed (setup)', err);
-          window.UI && window.UI.showToast && window.UI.showToast('Image upload failed - will try again on Save', 4000);
-          if(saveBtn) saveBtn.disabled = false;
-        }
-      }else{
-        // No firebaseStorage: keep preview and value as data URL so Save will persist it locally
-        const reader2 = new FileReader();
-        reader2.onload = ()=>{
-          const dataUrl = reader2.result;
-          if(profileImagePreview) profileImagePreview.src = dataUrl;
-          if(profileImageUrlInput) profileImageUrlInput.value = dataUrl;
-        };
-        reader2.readAsDataURL(f);
-      }
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        const dataUrl = reader.result;
+        if(profileImagePreview) profileImagePreview.src = dataUrl;
+        if(profileImageUrlInput) profileImageUrlInput.value = dataUrl;
+      };
+      reader.readAsDataURL(f);
     });
   }
 
@@ -1241,84 +1145,53 @@
       if(data.internships && data.internships.some(i => i.text && i.text.trim())){
         data.projects = (data.projects||[]).filter(p => !(p.title||'').toLowerCase().includes('intern'));
       }
-      // write locally first so editor state is preserved even if remote fails
+      // write locally first
       saveData(data);
 
-      // async save flow: ensure remote upload/write happens immediately when the admin signs in
+      // async save flow: require auth (if available), upload profile image, then write collections
       (async ()=>{
         try{
-          let allowRemote = false;
+          // If firebaseAuth exists, ensure an allowed admin is signed in
           if(firebaseAuth){
-            let user = firebaseAuth.currentUser;
+            const user = firebaseAuth.currentUser;
             if(!user){
-              // Prompt the admin to sign in now so changes can be pushed to Firebase immediately
-              const wantsSignIn = confirm('You are not signed in. Sign in now to push changes to Firebase? Click Cancel to save locally only.');
-              if(wantsSignIn){
-                try{
-                  const provider = new firebase.auth.GoogleAuthProvider();
-                  const result = await firebaseAuth.signInWithPopup(provider);
-                  user = result.user;
-                }catch(e){
-                  console.warn('Firebase sign-in failed', e);
-                  alert('Sign-in failed. Changes were saved locally.');
-                }
-              }else{
-                alert('Saved locally. To push changes later, sign in and click Save again.');
-              }
+              alert('Please sign in with the admin account to save changes.');
+              return;
             }
-
-            if(user){
-              const email = (user.email || '').toLowerCase();
-              if(email !== (ADMIN_ALLOWED_EMAIL || '').toLowerCase()){
-                alert('Signed-in account is not authorized to write. Changes saved locally only.');
-              }else{
-                allowRemote = true;
-              }
+            const email = (user.email || '').toLowerCase();
+            if(email !== (ADMIN_ALLOWED_EMAIL || '').toLowerCase()){
+              alert('Signed-in account is not authorized to write. Use the configured admin account.');
+              return;
             }
           }
 
-          // If remote allowed, upload profile image (if needed) and write collections
+          // If a profile file is selected and Storage is available, upload and replace profile.image
           try{
-            if(allowRemote && firebaseStorage){
-              // If an upload started on file-select, await that pending upload so Save writes the shortened URL.
-              let res = null;
-              if(pendingProfileUploadPromise){
-                try{ res = await pendingProfileUploadPromise; }catch(e){ res = null; }
-                pendingProfileUploadPromise = null;
-              } else {
-                try{ res = await uploadProfileImageIfNeeded(data); }catch(e){ res = null; }
-              }
-              if(res){
-                data.profile = data.profile || {};
-                // prefer shortenedURL (without token, with ?alt=media) for saving
-                const short = res.shortenedURL || (res.downloadURL ? (res.downloadURL.split('?')[0] + '?alt=media') : null);
-                data.profile.image = (profileImageUrlInput && profileImageUrlInput.value) ? profileImageUrlInput.value : (short || res.storagePath || res.downloadURL || (data.profile && data.profile.image) || '');
-              } else {
-                // No upload result - if user manually provided a URL in the input, save it
-                if(profileImageUrlInput && profileImageUrlInput.value){ data.profile = data.profile || {}; data.profile.image = profileImageUrlInput.value; }
-              }
+            if(firebaseStorage){
+              const uploadedUrl = await uploadProfileImageIfNeeded(data);
+              if(uploadedUrl){ data.profile = data.profile || {}; data.profile.image = uploadedUrl; }
             }
           }catch(e){ console.warn('Profile upload failed, continuing with existing image', e); }
 
+          // write to Firestore (collections-based) if available
           try{
-            if(allowRemote && firestore && metaDocRef){
-              // Ensure the meta doc (lightweight) is written first so profile.image is available immediately.
-              const meta = {
-                name: data.name||'', headline: data.headline||'', about: data.about||'', profile: data.profile||{}, resume: data.resume||'', contact: data.contact||{}, lastUpdate: Date.now(), defaultTheme: data.defaultTheme || ''
-              };
-              // write meta and wait so public page can pick it up immediately
-              try{ await metaDocRef.set(meta); }catch(e){ console.error('Meta write failed', e); }
-              // update lastUpdate so other tabs pick up changes
-              try{ localStorage.setItem('portfolio:lastUpdate', String(Date.now())); }catch(e){}
-              // Redirect to the public page immediately after meta write
-              window.location.href = 'index.html';
-              // Write collections asynchronously in background (do not block redirect)
-              (async ()=>{
-                try{ await writePortfolioCollections(data); }catch(err){ console.error('Failed to write collections to Firestore', err); }
-              })();
-              return; // we've redirected (or started redirect) so stop further processing
+            if(firestore && metaDocRef){
+              await writePortfolioCollections(data);
             }
-          }catch(err){ console.error('Failed to write meta/collections', err); }
+          }catch(err){ console.error('Failed to write collections to Firestore', err); }
+
+          // also write a lightweight 'lastUpdate' key so other tabs/windows receive a storage event
+          try{ localStorage.setItem('portfolio:lastUpdate', String(Date.now())); }catch(e){}
+
+          // If using Firebase Auth, sign out the admin user automatically after save
+          try{
+            if(firebaseAuth){
+              await firebaseAuth.signOut();
+            }
+          }catch(e){ console.warn('Auto sign-out failed', e); }
+
+          // redirect to the public page so user can see changes immediately
+          window.location.href = 'index.html';
         }catch(err){ console.error('Save flow error', err); alert('Save failed. See console for details.'); }
       })();
     });
