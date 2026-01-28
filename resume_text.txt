@@ -1,0 +1,45 @@
+Last Updated on October 11, 2025
+Velan M
+/linkedinlinkedin.com/in/velan-m |/githubgithub.com/velan1207 |/envel⌢pevelanm.cse2024@citchennai.net |♂¶obile-alt+91 79040 92680
+Professional Summary
+Aspiring Software Engineer skilled in full-stack web development (React, Node), backend APIs and
+algorithms . Solved 400+ LeetCode and900+ CodeChef problems. Practical experience building scalable
+web and mobile apps; seeking internships to contribute product-quality code.
+Education
+Chennai Institute of Technology Expected: Jun 2028
+B.E., Computer Science & Engineering CGPA: 8.67 / 10
+Technical Skills
+Languages: C/C++, Python, Java, JavaScript
+Web/Frameworks: React.js, Node.js, Express.js, HTML, CSS
+Databases/Tools: MySQL, Firebase, Git, VS Code
+Core: Data Structures, Algorithms, RESTful APIs
+Certifications
+•AWS Cloud Practitioner Essentials Sep 2025
+•LinkedIn Learning: Web Dev, Functional Programming in C++, Java Jan-Feb 2025
+•HackerRank: SQL (Basic), Problem Solving (Basic) Mar 2025
+•Cisco Networking Academy: Introduction to Data Science, IoT, Modern AI Jan 2025
+•Google Cloud / Hack2Skill: Agentic AI Day Jul 2025
+•Unstop / Adobe: Online MCQ + Prototype Eval (All India Developers Challenge) Jul 2025
+Projects
+PedalPulse — Urban Bike Rental Feedback App |Firebase, React, Node Sep 2025
+•Collected rider feedback (Google Sign-In) and stored ratings/comments for history.
+•Admin dashboard with charts and CSV export to support data-driven decisions.
+Weather Prediction Website |Node.js, OpenWeatherMap Mar 2025
+•Responsive forecast site using OpenWeatherMap API.
+•Modular Node.js backend with mobile-first UI.
+To-Do List App |Flutter Jun 2025
+•Cross-platform tasks with categories and reminders.
+•Persistent local storage and offline support.
+Calculator App |Flutter Jun 2025
+•Implements BODMAS with smooth UI and validation.
+Automatic Image Gallery |HTML, CSS Feb 2025
+•Responsive gallery with automatic transitions.
+Internship
+AICTE–EduSkills Virtual Internship Jun 2025
+Android App Development Intern
+•Built Flutter apps (calculator, to-do); implemented state management.
+•Used Git/GitHub for version control and deployments.
+Achievements
+•Solved 400+ LeetCode and900+ CodeChef problems.
+•Built and deployed multiple apps and web projects .
+•Participant — All India Developers Challenge 2025 andinstitute hackathons .

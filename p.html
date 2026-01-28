@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Redirecting…</title>
+  <style>body{font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f8fafc;color:#0f172a} .card{max-width:720px;padding:18px;border-radius:8px;background:white;box-shadow:0 6px 18px rgba(2,6,23,0.06);text-align:center;} .muted{color:#64748b;font-size:14px}</style>
+  <!-- Firebase (compat) - required only if you want Firestore lookup to resolve the short link -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+  <div class="card">
+    <h3 id="title">Resolving link…</h3>
+    <p id="msg" class="muted">Please wait while we resolve your short link.</p>
+    <p id="fallback" class="muted" style="display:none"></p>
+  </div>
+  <script>
+    // Reuse the same Firebase config as in app.js
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyD0KmDOYkBgaWmherPgupciFlrUNoTpL1s",
+      authDomain: "portfolio-f1b31.firebaseapp.com",
+      projectId: "portfolio-f1b31",
+      storageBucket: "portfolio-f1b31.firebasestorage.app",
+      messagingSenderId: "831274339687",
+      appId: "1:831274339687:web:8fb7be5fdc341ec41033c2",
+      measurementId: "G-69W84YT32Q"
+    };
+    // parse short id from query string (?id=...)
+    function getParam(name){ const u = new URL(location.href); return u.searchParams.get(name); }
+    const id = getParam('id');
+    if(!id){ document.getElementById('title').textContent = 'Missing id'; document.getElementById('msg').textContent = 'No short id provided in the URL.'; }
+    else{
+      try{ firebase.initializeApp(FIREBASE_CONFIG); }catch(e){}
+      const firestore = firebase.firestore();
+      (async ()=>{
+        try{
+          const doc = await firestore.collection('short_links').doc(id).get();
+          if(doc && doc.exists){
+            const data = doc.data();
+            const url = data && (data.url || data.n);
+            if(url){
+              document.getElementById('title').textContent = 'Redirecting…';
+              document.getElementById('msg').textContent = 'Opening the image in a new tab...';
+              // open in new tab then navigate for fallback
+              try{ const w = window.open(url, '_blank'); if(!w) window.location.href = url; }catch(e){ window.location.href = url; }
+            }else{
+              document.getElementById('title').textContent = 'Not found';
+              document.getElementById('msg').textContent = 'Short link exists but no destination URL available.';
+            }
+          }else{
+            document.getElementById('title').textContent = 'Not found';
+            document.getElementById('msg').textContent = 'Short link not found.';
+          }
+        }catch(err){
+          document.getElementById('title').textContent = 'Error';
+          document.getElementById('msg').textContent = 'Failed to resolve link. Check console for details.';
+          console.error('Resolve error', err);
+        }
+      })();
+    }
+  </script>
+</body>
+</html>

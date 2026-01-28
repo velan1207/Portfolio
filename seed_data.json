@@ -1,0 +1,74 @@
+{
+  "name": "Velan M",
+  "headline": "Aspiring Software Engineer — Full-stack web & backend",
+  "about": "<p>Aspiring Software Engineer skilled in full-stack web development (React, Node), backend APIs and algorithms. Solved 400+ LeetCode and 900+ CodeChef problems. Practical experience building scalable web and mobile apps; seeking internships to contribute product-quality code.</p>",
+  "projects": [
+    {
+      "title": "PedalPulse — Urban Bike Rental Feedback App | Firebase, React, Node | Sep 2025",
+      "desc": "<p>Developed a web-based platform to collect and analyze feedback from urban bike rental users, allowing authorities to make data-driven decisions.</p><ul><li>Integrated Google Sign-In for secure user authentication and stored users’ ratings and comments for historical tracking.</li><li>Built an admin dashboard with charts, graphs, and CSV export to visualize trends in satisfaction, safety, and infrastructure usage.</li><li>Implemented Firebase backend for scalable storage, real-time updates, and secure data handling.</li><li>Planned future enhancements including IoT device telemetry, sentiment analysis, and predictive insights for operational improvements.</li></ul>"
+    },
+    {
+      "title": "Weather Prediction Website | Node.js, OpenWeatherMap | Mar 2025",
+      "desc": "<p>Developed a responsive weather forecast website using a Node.js backend and the OpenWeatherMap API for live updates.</p><ul><li>Designed a mobile-first UI with intuitive layouts, allowing users to check weather conditions for multiple cities.</li><li>Implemented modular and scalable code architecture to facilitate feature updates like 7-day forecasts or hourly weather predictions.</li></ul>"
+    },
+    {
+      "title": "To-Do List App | Flutter | Jun 2025",
+      "desc": "<p>Built a cross-platform to-do app using Flutter and Dart supporting task creation, categorization, and reminders.</p><ul><li>Implemented persistent local storage to save tasks offline and synchronized updates when internet is available.</li><li>Designed responsive UI with smooth navigation and offline support to enhance user experience.</li></ul>"
+    },
+    {
+      "title": "Calculator App | Flutter | Jun 2025",
+      "desc": "<p>Developed a modern calculator app implementing BODMAS rules for accurate mathematical computations.</p><ul><li>Added input validation and smooth UI animations for better usability on mobile devices.</li><li>Built using Flutter/Dart to support both Android and iOS platforms.</li></ul>"
+    },
+    {
+      "title": "Automatic Image Gallery | HTML, CSS | Feb 2025",
+      "desc": "<p>Designed a responsive web image gallery with automatic transitions for smooth slideshow display.</p><ul><li>Implemented adaptive layout for different screen sizes to ensure usability across devices.</li></ul>"
+    }
+  ],
+  "skills": {
+    "technical": [
+      { "name": "C/C++", "link": "" },
+      { "name": "Python", "link": "" },
+      { "name": "Java", "link": "" },
+      { "name": "JavaScript", "link": "" },
+      { "name": "React.js", "link": "" },
+      { "name": "Node.js", "link": "" },
+      { "name": "Express.js", "link": "" },
+      { "name": "HTML", "link": "" },
+      { "name": "CSS", "link": "" },
+      { "name": "MySQL", "link": "" },
+      { "name": "Firebase", "link": "" },
+      { "name": "Git", "link": "" },
+      { "name": "Data Structures & Algorithms", "link": "" }
+    ],
+    "soft": [
+      { "name": "Problem Solving" },
+      { "name": "Teamwork" },
+      { "name": "Communication" }
+    ]
+  },
+  "achievements": [
+    "AWS Cloud Practitioner certification",
+    "LinkedIn Learning: Web Development courses",
+    "HackerRank and CodeChef problem solving (400+ LeetCode, 900+ CodeChef)",
+    "Google Cloud / Hack2Skill challenges"
+  ],
+  "internships": [
+    {
+      "company": "AICTE–EduSkills Virtual Internship",
+      "role": "Android App Development Intern (Jun 2025)",
+      "text": "<ul><li>Built Flutter apps (calculator, to-do); implemented state management.</li><li>Used Git/GitHub for version control and deployments.</li></ul>",
+      "link": ""
+    }
+  ],
+  "profile": {
+    "image": "img/velan.jpg",
+    "caption": "Student at Chennai Institute Of Technology"
+  },
+  "resume": "img/Velan_M_Resume 11-10-2025.pdf",
+  "contact": {
+    "email": "velanm.cse2024@citchennai.net",
+    "phone": "+91 7904092680",
+    "linkedin": "https://linkedin.com/in/velan-m",
+    "github": "https://github.com/velan1207"
+  }
+}
