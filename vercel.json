@@ -1,32 +1,24 @@
 {
-  "version": 2,
-  "builds": [
-    { "src": "api/**/*.js", "use": "@vercel/node" },
-    { "src": "index.html", "use": "@vercel/static" },
-    { "src": "!(api)/**", "use": "@vercel/static" }
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/[^.]*",
+      "destination": "/index.html"
+    }
   ],
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/api/$1.js" },
+  "headers": [
     {
-      "src": "/admin.html",
-      "headers": {
-        "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
-        "Cross-Origin-Embedder-Policy": "unsafe-none",
-        "Access-Control-Allow-Origin": "https://velan-cse-portfolio.vercel.app",
-        "Vary": "Origin"
-      },
-      "dest": "/admin.html"
-    },
-    {
-      "src": "/",
-      "headers": {
-        "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
-        "Cross-Origin-Embedder-Policy": "unsafe-none",
-        "Access-Control-Allow-Origin": "https://velan-cse-portfolio.vercel.app",
-        "Vary": "Origin"
-      },
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin-allow-popups"
+        },
+        {
+          "key": "Cross-Origin-Embedder-Policy",
+          "value": "unsafe-none"
+        }
+      ]
     }
   ]
 }
-
