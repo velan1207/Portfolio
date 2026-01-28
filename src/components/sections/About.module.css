@@ -1,0 +1,128 @@
+.about {
+    padding: var(--space-4xl) 0;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: var(--space-3xl);
+}
+
+.label {
+    display: inline-block;
+    padding: var(--space-xs) var(--space-md);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-full);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: var(--space-md);
+}
+
+.title {
+    font-size: clamp(1.75rem, 5vw, 2.5rem);
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: var(--leading-tight);
+}
+
+.content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3xl);
+    align-items: start;
+}
+
+.text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+
+.description {
+    font-size: var(--text-lg);
+    color: var(--text-secondary);
+    line-height: var(--leading-relaxed);
+}
+
+.description p {
+    margin-bottom: var(--space-md);
+}
+
+.description ul {
+    padding-left: var(--space-lg);
+    margin-bottom: var(--space-md);
+}
+
+.description li {
+    margin-bottom: var(--space-sm);
+}
+
+.caption {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    font-style: italic;
+    padding-left: var(--space-md);
+    border-left: 3px solid var(--primary);
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md);
+}
+
+.statCard {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-lg);
+    text-align: center;
+    transition: all var(--transition-base);
+}
+
+.statCard:hover {
+    border-color: var(--primary);
+    box-shadow: var(--shadow-glow);
+}
+
+.statIcon {
+    font-size: 28px;
+    color: var(--primary);
+    margin-bottom: var(--space-sm);
+}
+
+.statValue {
+    font-size: var(--text-3xl);
+    font-weight: 800;
+    color: var(--text-primary);
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.statLabel {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    margin-top: var(--space-xs);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .content {
+        grid-template-columns: 1fr;
+    }
+
+    .stats {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

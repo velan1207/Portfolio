@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/**/*.js", "use": "@vercel/node" },
+    { "src": "index.html", "use": "@vercel/static" },
+    { "src": "!(api)/**", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1.js" },
+    {
+      "src": "/admin.html",
+      "headers": {
+        "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+        "Cross-Origin-Embedder-Policy": "unsafe-none",
+        "Access-Control-Allow-Origin": "https://velan-cse-portfolio.vercel.app",
+        "Vary": "Origin"
+      },
+      "dest": "/admin.html"
+    },
+    {
+      "src": "/",
+      "headers": {
+        "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+        "Cross-Origin-Embedder-Policy": "unsafe-none",
+        "Access-Control-Allow-Origin": "https://velan-cse-portfolio.vercel.app",
+        "Vary": "Origin"
+      },
+      "dest": "/index.html"
+    }
+  ]
+}
+

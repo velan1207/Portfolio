@@ -1,0 +1,29 @@
+{
+  "name": "velan-portfolio",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "description": "Modern React Portfolio with Firebase integration",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "server": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "firebase": "^10.7.0",
+    "framer-motion": "^10.16.0",
+    "google-auth-library": "^8.8.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-icons": "^4.12.0",
+    "react-router-dom": "^6.20.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.2.0",
+    "vite": "^5.0.0"
+  }
+}

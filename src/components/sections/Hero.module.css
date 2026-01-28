@@ -1,0 +1,239 @@
+.hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4xl) 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3xl);
+    align-items: center;
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+
+.greeting {
+    font-size: var(--text-lg);
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.name {
+    font-size: clamp(2.5rem, 8vw, 4.5rem);
+    font-weight: 800;
+    line-height: 1.1;
+    margin: 0;
+}
+
+.nameGradient {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.headline {
+    font-size: var(--text-xl);
+    color: var(--text-secondary);
+    max-width: 500px;
+    line-height: var(--leading-relaxed);
+}
+
+.roles {
+    display: flex;
+    align-items: center;
+    font-size: var(--text-lg);
+    height: 40px;
+}
+
+.rolePrefix {
+    color: var(--text-secondary);
+    margin-right: var(--space-xs);
+}
+
+.roleText {
+    position: relative;
+    height: 30px;
+    overflow: hidden;
+}
+
+.role {
+    position: absolute;
+    color: var(--accent);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.actions {
+    display: flex;
+    gap: var(--space-md);
+    margin-top: var(--space-md);
+}
+
+.social {
+    display: flex;
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+}
+
+.social a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    color: var(--text-secondary);
+    font-size: 20px;
+    transition: all var(--transition-base);
+}
+
+.social a:hover {
+    background: var(--primary);
+    color: var(--text-inverse);
+    transform: translateY(-4px);
+}
+
+/* Profile Image */
+.imageWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.imageBg {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: var(--gradient-primary);
+    border-radius: var(--radius-2xl);
+    opacity: 0.2;
+    filter: blur(60px);
+    animation: pulse-glow 4s ease-in-out infinite;
+}
+
+.image {
+    width: 340px;
+    height: 400px;
+    object-fit: cover;
+    object-position: top;
+    border-radius: var(--radius-2xl);
+    border: 3px solid transparent;
+    background: linear-gradient(var(--bg-primary), var(--bg-primary)) padding-box,
+        var(--gradient-primary) border-box;
+    box-shadow: var(--shadow-xl),
+        0 0 40px rgba(99, 102, 241, 0.15);
+    position: relative;
+    z-index: 1;
+}
+
+.imageGlow {
+    position: absolute;
+    width: 360px;
+    height: 420px;
+    border-radius: var(--radius-2xl);
+    background: var(--gradient-primary);
+    opacity: 0.25;
+    filter: blur(50px);
+    z-index: 0;
+}
+
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.2;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 0.3;
+    }
+}
+
+/* Scroll Indicator */
+.scrollIndicator {
+    position: absolute;
+    bottom: var(--space-xl);
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.scrollIndicator a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--text-muted);
+    font-size: 24px;
+    transition: color var(--transition-fast);
+}
+
+.scrollIndicator a:hover {
+    color: var(--primary);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .container {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+
+    .content {
+        align-items: center;
+    }
+
+    .headline {
+        max-width: 100%;
+    }
+
+    .actions {
+        justify-content: center;
+    }
+
+    .social {
+        justify-content: center;
+    }
+
+    .imageWrapper {
+        order: -1;
+    }
+
+    .image {
+        width: 220px;
+        height: 280px;
+    }
+
+    .imageGlow {
+        width: 240px;
+        height: 300px;
+    }
+}
+
+@media (max-width: 640px) {
+    .hero {
+        padding: var(--space-3xl) 0;
+    }
+
+    .actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .actions .btn {
+        width: 100%;
+    }
+}
