@@ -582,3 +582,36 @@
 .confirmDeleteBtn:hover {
     filter: brightness(1.1);
 }
+
+/* Stats Editing Grid */
+.statsGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-lg);
+}
+
+.statEditCard {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.statEditCard .field {
+    margin-bottom: 0;
+}
+
+.statEditCard .field label {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    margin-bottom: var(--space-2xs);
+}
+
+@media (max-width: 768px) {
+    .statsGrid {
+        grid-template-columns: 1fr;
+    }
+}

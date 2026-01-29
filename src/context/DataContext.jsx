@@ -39,6 +39,12 @@ const defaultData = {
     name: 'Velan M',
     headline: 'Aspiring Software Engineer — Full-stack web & backend',
     about: '<p>Aspiring Software Engineer skilled in full-stack web development (React, Node), backend APIs and algorithms. Solved 400+ LeetCode and 900+ CodeChef problems.</p>',
+    stats: [
+        { id: '1', icon: 'code', value: '500+', label: 'LeetCode Problems' },
+        { id: '2', icon: 'coffee', value: '1000+', label: 'CodeChef Problems' },
+        { id: '3', icon: 'award', value: '5+', label: 'Projects' },
+        { id: '4', icon: 'users', value: '1', label: 'Internship' }
+    ],
     projects: [
         {
             id: '1',

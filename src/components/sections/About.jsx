@@ -1,20 +1,29 @@
 import { useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
-import { FiCode, FiCoffee, FiAward, FiUsers } from 'react-icons/fi'
+import { FiCode, FiCoffee, FiAward, FiUsers, FiStar, FiBriefcase } from 'react-icons/fi'
 import { useData } from '../../context/DataContext'
 import styles from './About.module.css'
+
+// Icon mapping for stats
+const iconMap = {
+    code: <FiCode />,
+    coffee: <FiCoffee />,
+    award: <FiAward />,
+    users: <FiUsers />,
+    star: <FiStar />,
+    briefcase: <FiBriefcase />
+}
 
 function About() {
     const { data } = useData()
     const ref = useRef(null)
     const isInView = useInView(ref, { once: true, margin: "-100px" })
 
-    const stats = [
-        { icon: <FiCode />, value: '500+', label: 'LeetCode Problems' },
-        { icon: <FiCoffee />, value: '1000+', label: 'CodeChef Problems' },
-        { icon: <FiAward />, value: '5+', label: 'Projects' },
-        { icon: <FiUsers />, value: '1', label: 'Internship' },
-    ]
+    // Use stats from data context, with fallback
+    const stats = (data.stats || []).map(stat => ({
+        ...stat,
+        icon: iconMap[stat.icon] || <FiStar />
+    }))
 
     const containerVariants = {
         hidden: { opacity: 0 },

@@ -124,6 +124,16 @@ function Admin() {
         }
     }
 
+    // Stat update
+    const updateStat = (id, field, value) => {
+        setFormData(prev => ({
+            ...prev,
+            stats: (prev.stats || []).map(s =>
+                s.id === id ? { ...s, [field]: value } : s
+            )
+        }))
+    }
+
     // Skill CRUD
     const addSkill = (type) => {
         const newSkill = { name: 'New Skill', level: 75 }
@@ -439,6 +449,55 @@ function Admin() {
                                 <small className={styles.helpText}>
                                     Select text and click a formatting button, or type HTML directly
                                 </small>
+                            </div>
+                        </section>
+
+                        {/* Stats Boxes */}
+                        <section className={styles.section}>
+                            <h2 className={styles.sectionTitle}>About Page Stats</h2>
+                            <p className={styles.helpText} style={{ marginBottom: '1rem' }}>
+                                Edit the stat boxes displayed in the About section
+                            </p>
+                            <div className={styles.statsGrid}>
+                                {(formData.stats || []).map((stat) => (
+                                    <div key={stat.id} className={styles.statEditCard}>
+                                        <div className={styles.field}>
+                                            <label>Icon</label>
+                                            <select
+                                                value={stat.icon || 'code'}
+                                                onChange={(e) => updateStat(stat.id, 'icon', e.target.value)}
+                                                className={styles.input}
+                                            >
+                                                <option value="code">Code (LeetCode)</option>
+                                                <option value="coffee">Coffee (CodeChef)</option>
+                                                <option value="award">Award</option>
+                                                <option value="users">Users</option>
+                                                <option value="star">Star</option>
+                                                <option value="briefcase">Briefcase</option>
+                                            </select>
+                                        </div>
+                                        <div className={styles.field}>
+                                            <label>Value</label>
+                                            <input
+                                                type="text"
+                                                value={stat.value || ''}
+                                                onChange={(e) => updateStat(stat.id, 'value', e.target.value)}
+                                                className={styles.input}
+                                                placeholder="e.g., 500+"
+                                            />
+                                        </div>
+                                        <div className={styles.field}>
+                                            <label>Label</label>
+                                            <input
+                                                type="text"
+                                                value={stat.label || ''}
+                                                onChange={(e) => updateStat(stat.id, 'label', e.target.value)}
+                                                className={styles.input}
+                                                placeholder="e.g., LeetCode Problems"
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </section>
 
