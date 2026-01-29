@@ -954,34 +954,6 @@ function Admin() {
                             </button>
                         </section >
 
-                        {/* Achievements */}
-                        < section className={styles.section} >
-                            <div className={styles.sectionHeader}>
-                                <h2 className={styles.sectionTitle}>Achievements</h2>
-                                <button className="btn btn-secondary" onClick={addAchievement}>
-                                    <FiPlus /> Add
-                                </button>
-                            </div>
-                            <div className={styles.skillsList}>
-                                {(formData.achievements || []).map((achievement, index) => (
-                                    <div key={index} className={styles.skillItem}>
-                                        <input
-                                            type="text"
-                                            value={achievement}
-                                            onChange={(e) => updateAchievement(index, e.target.value)}
-                                            className={styles.input}
-                                        />
-                                        <button
-                                            className={styles.deleteBtn}
-                                            onClick={() => deleteAchievement(index)}
-                                        >
-                                            <FiTrash2 />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        </section >
-
                         {/* Soft Skills */}
                         <section className={styles.section}>
                             <div className={styles.sectionHeader}>
@@ -1150,6 +1122,34 @@ function Admin() {
                                                 placeholder="What you did during the internship..."
                                             />
                                         </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+
+                        {/* Achievements */}
+                        <section className={styles.section}>
+                            <div className={styles.sectionHeader}>
+                                <h2 className={styles.sectionTitle}>Achievements</h2>
+                                <button className="btn btn-secondary" onClick={addAchievement}>
+                                    <FiPlus /> Add
+                                </button>
+                            </div>
+                            <div className={styles.skillsList}>
+                                {(formData.achievements || []).map((achievement, index) => (
+                                    <div key={index} className={styles.skillItem}>
+                                        <input
+                                            type="text"
+                                            value={achievement}
+                                            onChange={(e) => updateAchievement(index, e.target.value)}
+                                            className={styles.input}
+                                        />
+                                        <button
+                                            className={styles.deleteBtn}
+                                            onClick={() => deleteAchievement(index)}
+                                        >
+                                            <FiTrash2 />
+                                        </button>
                                     </div>
                                 ))}
                             </div>
