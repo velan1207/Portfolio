@@ -190,6 +190,69 @@ function Admin() {
         }))
     }
 
+    // Timeline CRUD
+    const addTimeline = () => {
+        const newItem = {
+            id: generateId(),
+            year: new Date().getFullYear().toString(),
+            title: 'New Entry',
+            description: '',
+            type: 'education'
+        }
+        setFormData(prev => ({
+            ...prev,
+            timeline: [...(prev.timeline || []), newItem]
+        }))
+    }
+
+    const updateTimeline = (id, field, value) => {
+        setFormData(prev => ({
+            ...prev,
+            timeline: (prev.timeline || []).map(t =>
+                t.id === id ? { ...t, [field]: value } : t
+            )
+        }))
+    }
+
+    const deleteTimeline = (id) => {
+        setFormData(prev => ({
+            ...prev,
+            timeline: (prev.timeline || []).filter(t => t.id !== id)
+        }))
+    }
+
+    // Internship CRUD
+    const addInternship = () => {
+        const newItem = {
+            id: generateId(),
+            company: 'New Company',
+            role: 'Intern',
+            period: 'Month Year',
+            text: '',
+            link: ''
+        }
+        setFormData(prev => ({
+            ...prev,
+            internships: [...(prev.internships || []), newItem]
+        }))
+    }
+
+    const updateInternship = (id, field, value) => {
+        setFormData(prev => ({
+            ...prev,
+            internships: (prev.internships || []).map(i =>
+                i.id === id ? { ...i, [field]: value } : i
+            )
+        }))
+    }
+
+    const deleteInternship = (id) => {
+        setFormData(prev => ({
+            ...prev,
+            internships: (prev.internships || []).filter(i => i.id !== id)
+        }))
+    }
+
     // Helper to insert HTML tag around selected text
     const insertTag = (textareaId, tag, field) => {
         const textarea = document.getElementById(textareaId)
@@ -918,6 +981,179 @@ function Admin() {
                                 ))}
                             </div>
                         </section >
+
+                        {/* Soft Skills */}
+                        <section className={styles.section}>
+                            <div className={styles.sectionHeader}>
+                                <h2 className={styles.sectionTitle}>Soft Skills</h2>
+                                <button className="btn btn-secondary" onClick={() => addSkill('soft')}>
+                                    <FiPlus /> Add
+                                </button>
+                            </div>
+                            <div className={styles.skillsList}>
+                                {(formData.skills?.soft || []).map((skill, index) => (
+                                    <div key={index} className={styles.skillItem}>
+                                        <input
+                                            type="text"
+                                            value={skill.name || ''}
+                                            onChange={(e) => updateSkill('soft', index, 'name', e.target.value)}
+                                            className={styles.input}
+                                            placeholder="Soft skill name"
+                                        />
+                                        <button
+                                            className={styles.deleteBtn}
+                                            onClick={() => deleteSkill('soft', index)}
+                                        >
+                                            <FiTrash2 />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+
+                        {/* Career & Education (Timeline) */}
+                        <section className={styles.section}>
+                            <div className={styles.sectionHeader}>
+                                <h2 className={styles.sectionTitle}>Career & Education</h2>
+                                <button className="btn btn-secondary" onClick={addTimeline}>
+                                    <FiPlus /> Add Entry
+                                </button>
+                            </div>
+                            <div className={styles.timelineList}>
+                                {(formData.timeline || []).map((item) => (
+                                    <div key={item.id} className={styles.timelineItem}>
+                                        <div className={styles.timelineRow}>
+                                            <div className={styles.field}>
+                                                <label>Year</label>
+                                                <input
+                                                    type="text"
+                                                    value={item.year || ''}
+                                                    onChange={(e) => updateTimeline(item.id, 'year', e.target.value)}
+                                                    className={styles.input}
+                                                    placeholder="2024"
+                                                />
+                                            </div>
+                                            <div className={styles.field}>
+                                                <label>Type</label>
+                                                <select
+                                                    value={item.type || 'education'}
+                                                    onChange={(e) => updateTimeline(item.id, 'type', e.target.value)}
+                                                    className={styles.input}
+                                                >
+                                                    <option value="education">Education</option>
+                                                    <option value="work">Work</option>
+                                                </select>
+                                            </div>
+                                            <button
+                                                className={styles.deleteBtn}
+                                                onClick={() => deleteTimeline(item.id)}
+                                            >
+                                                <FiTrash2 />
+                                            </button>
+                                        </div>
+                                        <div className={styles.field}>
+                                            <label>Title</label>
+                                            <input
+                                                type="text"
+                                                value={item.title || ''}
+                                                onChange={(e) => updateTimeline(item.id, 'title', e.target.value)}
+                                                className={styles.input}
+                                                placeholder="Started B.Tech at..."
+                                            />
+                                        </div>
+                                        <div className={styles.field}>
+                                            <label>Description</label>
+                                            <input
+                                                type="text"
+                                                value={item.description || ''}
+                                                onChange={(e) => updateTimeline(item.id, 'description', e.target.value)}
+                                                className={styles.input}
+                                                placeholder="Computer Science and Engineering"
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+
+                        {/* Internships */}
+                        <section className={styles.section}>
+                            <div className={styles.sectionHeader}>
+                                <h2 className={styles.sectionTitle}>Internships & Work</h2>
+                                <button className="btn btn-secondary" onClick={addInternship}>
+                                    <FiPlus /> Add Internship
+                                </button>
+                            </div>
+                            <div className={styles.internshipList}>
+                                {(formData.internships || []).map((item) => (
+                                    <div key={item.id} className={styles.internshipItem}>
+                                        <div className={styles.internshipHeader}>
+                                            <h4>{item.company || 'New Internship'}</h4>
+                                            <button
+                                                className={styles.deleteBtn}
+                                                onClick={() => deleteInternship(item.id)}
+                                            >
+                                                <FiTrash2 />
+                                            </button>
+                                        </div>
+                                        <div className={styles.grid}>
+                                            <div className={styles.field}>
+                                                <label>Company</label>
+                                                <input
+                                                    type="text"
+                                                    value={item.company || ''}
+                                                    onChange={(e) => updateInternship(item.id, 'company', e.target.value)}
+                                                    className={styles.input}
+                                                    placeholder="Company Name"
+                                                />
+                                            </div>
+                                            <div className={styles.field}>
+                                                <label>Role</label>
+                                                <input
+                                                    type="text"
+                                                    value={item.role || ''}
+                                                    onChange={(e) => updateInternship(item.id, 'role', e.target.value)}
+                                                    className={styles.input}
+                                                    placeholder="Intern Role"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className={styles.grid}>
+                                            <div className={styles.field}>
+                                                <label>Period</label>
+                                                <input
+                                                    type="text"
+                                                    value={item.period || ''}
+                                                    onChange={(e) => updateInternship(item.id, 'period', e.target.value)}
+                                                    className={styles.input}
+                                                    placeholder="Jun 2024 - Aug 2024"
+                                                />
+                                            </div>
+                                            <div className={styles.field}>
+                                                <label>Link (Optional)</label>
+                                                <input
+                                                    type="url"
+                                                    value={item.link || ''}
+                                                    onChange={(e) => updateInternship(item.id, 'link', e.target.value)}
+                                                    className={styles.input}
+                                                    placeholder="https://..."
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className={styles.field}>
+                                            <label>Description</label>
+                                            <textarea
+                                                value={item.text || ''}
+                                                onChange={(e) => updateInternship(item.id, 'text', e.target.value)}
+                                                className={styles.textarea}
+                                                rows={3}
+                                                placeholder="What you did during the internship..."
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
                     </div >
                 </motion.div >
             </div >
