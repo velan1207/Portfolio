@@ -1234,6 +1234,21 @@ function Admin() {
                     )
                 }
             </AnimatePresence >
+
+            {/* Floating Save Button */}
+            <motion.button
+                className={styles.floatingSaveBtn}
+                onClick={handleSave}
+                disabled={saving || syncing}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+            >
+                <FiSave />
+                <span>{saving ? 'Saving...' : syncing ? 'Syncing...' : 'Save'}</span>
+            </motion.button>
         </div >
     )
 }
